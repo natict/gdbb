@@ -98,6 +98,7 @@ context = etree.iterparse(
 		load_dtd=True)
 
 print('DEBUG: reading XML into data stracture')
+uid = 0
 for action, elem in context:
 	if isValidPaper(elem, args.startDate, args.endDate):
 		authors = [e for e in elem.getchildren() if e.tag == PAPER_AUTHOR_ELEM]
@@ -109,8 +110,11 @@ for action, elem in context:
 				# remove commas and other non-supported characters for 
 				#	a valid ASCII CSV output
 				name = author.text.replace(',','').encode('utf-8').decode('ascii','ignore')
-				nodes[name] = nodes.get(name,0) + 1
-				authors_ids.add(hash(name))
+				if not nodes.has_key(name):
+					nodes[name] = (uid, 0)
+					uid += 1
+				nodes[name] = (nodes[name][0], nodes[name][1]+1)
+				authors_ids.add(nodes[name][0])
 			# extract edges
 			for e in itertools.combinations(authors_ids,2):
 				edges.add(tuple(sorted(e)))
@@ -121,23 +125,21 @@ for action, elem in context:
 # write data
 if not os.path.exists(args.outputDir):
 	os.makedirs(args.outputDir)
-# filter by core (by creating a filter-set while printing)
-coreFilter = set()
 
 # write nodes
 print('DEBUG: writing graph nodes')
 nodesFile = open(os.path.join(args.outputDir, OUTPUT_NODES),'w')
+nodesByID = {}
 for k in nodes:
-	if nodes[k] >= args.core:
-		nodesFile.write('%s,%s\n' % (hash(k),k))
-	else:
-		coreFilter.add(hash(k))
+	if nodes[k][1] >= args.core:
+		nodesFile.write('%s,%s\n' % (nodes[k][0],k))
+		nodesByID[nodes[k][0]] = k
 nodesFile.close()
 
 # write edges
 print('DEBUG: writing graph edges')
 edgesFile = open(os.path.join(args.outputDir, OUTPUT_EDGES),'w')
 for e in edges:
-	if (e[0] not in coreFilter) and (e[1] not in coreFilter):
+	if (e[0] in nodesByID) and (e[1] in nodesByID):
 		edgesFile.write('%s,%s\n' % e)
 edgesFile.close()
