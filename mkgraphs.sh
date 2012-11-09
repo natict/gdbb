@@ -19,14 +19,17 @@ fi
 popd
 
 # Generate Graphs
-./dblp2graph.py -i $XML_DIR -o ./all
-./dblp2graph.py -i $XML_DIR -o ./all-core3 --core 3
+./dblp2graph.py -i $XML_DIR -o ./all &
+./dblp2graph.py -i $XML_DIR -o ./2002-2009 -e 2009-12-31 &
+./dblp2graph.py -i $XML_DIR -o ./2010-2012 -s 2010-01-01 &
 
-./dblp2graph.py -i $XML_DIR -o ./2002-2009 -e 2009-12-31
-./dblp2graph.py -i $XML_DIR -o ./2002-2009-core3 -e 2009-12-31 --core 3
+wait
 
-./dblp2graph.py -i $XML_DIR -o ./2010-2012 -s 2010-01-01
-./dblp2graph.py -i $XML_DIR -o ./2010-2012-core3 -s 2010-01-01 --core 3
+./dblp2graph.py -i $XML_DIR -o ./all-core3 --core 3 &
+./dblp2graph.py -i $XML_DIR -o ./2002-2009-core3 -e 2009-12-31 --core 3 &
+./dblp2graph.py -i $XML_DIR -o ./2010-2012-core3 -s 2010-01-01 --core 3 &
+
+wait
 
 # Print stats
 printf "Set Name\t:\tNode Count\t:\tEdge Count\n"
