@@ -1,5 +1,6 @@
 gdbb
 ====
+(Graph DB benchmarks)
 
 Benchmark graph link-prediction algorithms overs different DBMS
 
@@ -11,5 +12,5 @@ which can be found here: http://dblp.uni-trier.de/xml/
 
 Prerequisites
 =============
-python2.7
-python-lxml
+* python2.7
+* python-lxml
