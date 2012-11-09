@@ -1,0 +1,4 @@
+# Avoid uploading raw data and graphs
+*.xml
+*.dtd
+*.csv
