@@ -14,6 +14,7 @@ Prerequisites
 =============
 * python2.7
 * python-lxml
+* mysql-server
 
 Quick Start
 ===========
@@ -29,6 +30,13 @@ cd gdbb
 ```
 chmod u+x ./mkgraphs.sh
 ./mkgraphs.sh
+```
+
+* Create MySQL tables (you'll need mysql root):
+
+```
+chmod u+x ./init-mysql.sh
+./init-mysql.sh
 ```
 
 Notes
