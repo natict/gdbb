@@ -33,4 +33,12 @@ chmod u+x ./mkgraphs.sh
 
 Notes
 =====
-Graph generation is done in-memory.
+* Graph generation is done in-memory, make sure you have enough
+* Some MySQL configuration changes are recommended (significantly speedup load time):
+
+```
+innodb_additional_mem_pool_size = 512M
+innodb_buffer_pool_size = 512M
+innodb_log_file_size = 256M
+innodb_log_buffer_size = 256M
+```
