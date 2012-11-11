@@ -1,4 +1,5 @@
 DROP PROCEDURE IF EXISTS `create_graph_tables`;
+DROP PROCEDURE IF EXISTS `common_neighbors`;
 
 DELIMITER $$
 CREATE DEFINER=`gdbb`@`localhost` PROCEDURE `create_graph_tables`( IN name VARCHAR(16) )
@@ -32,4 +33,44 @@ BEGIN
  )');
  PREPARE createEdges FROM @createEdgesStr;
  EXECUTE createEdges;
+END $$
+
+CREATE DEFINER=`gdbb`@`localhost` PROCEDURE `common_neighbors`( IN name VARCHAR(16) )
+BEGIN
+SET @selectCN = CONCAT('
+select x,y,SUM(s) as score
+from (
+/*
+* x,a   a,y
+*/
+(select e1.id1 as x, e2.id2 as y, count(*) as s
+from ',name,'_edges as e1,
+     ',name,'_edges as e2
+where e1.id1<e2.id2 and e1.id2=e2.id1
+group by x,y)
+union
+/*
+* x,a   y,a
+*/
+(select e1.id1 as x, e2.id1 as y, count(*) as s
+from ',name,'_edges as e1,
+     ',name,'_edges as e2
+where e1.id1<e2.id1 and e1.id2=e2.id2
+group by x,y)
+union
+/*
+* a,x   a,y
+*/
+(select e1.id2 as x, e2.id2 as y, count(*) as s
+from ',name,'_edges as e1,
+     ',name,'_edges as e2
+where e1.id2<e2.id2 and e1.id1=e2.id1
+group by x,y)) as t
+group by t.x,t.y
+order by score desc
+limit 0,100;');
+
+PREPARE cn FROM @selectCN;
+EXECUTE cn;
+
 END
