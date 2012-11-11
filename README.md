@@ -32,11 +32,18 @@ chmod u+x ./mkgraphs.sh
 ./mkgraphs.sh
 ```
 
-* Create MySQL tables (you'll need mysql root):
+* Create MySQL tables and procedures (you'll need mysql root):
 
 ```
 chmod u+x ./init-mysql.sh
 ./init-mysql.sh
+```
+
+* Execute MySQL benchmark:
+
+```
+chmod u+x ./benchmark-mysql.sh
+./benchmark-mysql.sh
 ```
 
 Notes
