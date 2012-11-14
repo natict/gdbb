@@ -48,7 +48,7 @@ from ',name,'_edges as e1,
      ',name,'_edges as e2
 where e1.id1<e2.id2 and e1.id2=e2.id1
 group by x,y)
-union
+union all
 /*
 * x,a   y,a
 */
@@ -57,7 +57,7 @@ from ',name,'_edges as e1,
      ',name,'_edges as e2
 where e1.id1<e2.id1 and e1.id2=e2.id2
 group by x,y)
-union
+union all
 /*
 * a,x   a,y
 */
