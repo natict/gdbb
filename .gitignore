@@ -1,4 +1,5 @@
-# Avoid uploading raw data and graphs
+# Avoid uploading raw data, graphs and outputs
 *.xml
 *.dtd
 *.csv
+*.out

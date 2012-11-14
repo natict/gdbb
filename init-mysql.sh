@@ -2,6 +2,7 @@
 
 set -o errexit
 
+source ./commons.sh
 source ./graphs-conf.sh
 
 echo "Creating gdbb database and user, using the following SQL:"
@@ -17,6 +18,7 @@ mysql -ugdbb gdbb < mysql/init.sql
 echo "Loading graphs:"
 for g in ${GRAPH_NAMES[@]}; do
 	echo -e "\tloading $g..."
+	t=$(timer)
 	n=$(readlink -f $g/nodes.csv)
 	e=$(readlink -f $g/edges.csv)
 	echo "CALL create_graph_tables('$g');" | mysql -ugdbb gdbb
@@ -24,4 +26,5 @@ for g in ${GRAPH_NAMES[@]}; do
 		| mysql --local-infile=1 -ugdbb gdbb
 	echo "LOAD DATA LOCAL INFILE '$e' INTO TABLE ${g}_edges FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';" \
 		| mysql --local-infile=1 -ugdbb gdbb
+	printf 'Elapsed time: %s\n' $(timer $t)
 done
