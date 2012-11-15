@@ -36,5 +36,5 @@ for s in ${GRAPH_NAMES[@]}; do
 		$(wc -l ./$s/nodes.csv | cut -f1 -d' ') \
 		$(wc -l ./$s/edges.csv | cut -f1 -d' ') \
 		$(du -sh ./$s/nodes.csv | cut -f1) \
-		$(du -sh ./$s/nodes.csv | cut -f1)
+		$(du -sh ./$s/edges.csv | cut -f1)
 done
