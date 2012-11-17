@@ -30,6 +30,8 @@ import itertools
 from lxml import etree
 import os
 
+DEBUG=False
+
 INPUT_XML = "dblp.xml"
 INPUT_DTD = "dblp.dtd"
 OUTPUT_NODES = "nodes.csv"
@@ -47,6 +49,10 @@ nodes = {}
 edges = set()
 # This will enable O(n) memory footprint, 
 # 	and allow to filter out the core.
+
+def debug(msg=None):
+	if DEBUG:
+		print("DEBUG: ", msg)
 
 # Checks if this is a valid paper
 def isValidPaper(e, startDate=None, endDate=None):
@@ -97,7 +103,7 @@ context = etree.iterparse(
 		os.path.join(args.inputDir, INPUT_XML), 
 		load_dtd=True)
 
-print('DEBUG: reading XML into data stracture')
+debug('reading XML into data stracture')
 uid = 0
 for action, elem in context:
 	if isValidPaper(elem, args.startDate, args.endDate):
@@ -116,8 +122,9 @@ for action, elem in context:
 				nodes[name] = (nodes[name][0], nodes[name][1]+1)
 				authors_ids.add(nodes[name][0])
 			# extract edges
-			for e in itertools.combinations(authors_ids,2):
-				edges.add(tuple(sorted(e)))
+			for e in itertools.combinations(authors_ids,2 ):
+				edges.add(tuple(sorted(e))) 			 # add (x,y)
+				edges.add(tuple(sorted(e,reverse=True))) # add (y,x)
 		# Free the RAM
 		elem.clear()
 
@@ -127,7 +134,7 @@ if not os.path.exists(args.outputDir):
 	os.makedirs(args.outputDir)
 
 # write nodes
-print('DEBUG: writing graph nodes')
+debug('writing graph nodes')
 nodesFile = open(os.path.join(args.outputDir, OUTPUT_NODES),'w')
 nodesByID = {}
 for k in nodes:
@@ -137,7 +144,7 @@ for k in nodes:
 nodesFile.close()
 
 # write edges
-print('DEBUG: writing graph edges')
+debug('writing graph edges')
 edgesFile = open(os.path.join(args.outputDir, OUTPUT_EDGES),'w')
 for e in edges:
 	if (e[0] in nodesByID) and (e[1] in nodesByID):

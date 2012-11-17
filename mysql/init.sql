@@ -35,6 +35,22 @@ BEGIN
  EXECUTE createEdges;
 END $$
 
+CREATE DEFINER=`gdbb`@`localhost` PROCEDURE `common_neighbors2`( IN name VARCHAR(16) )
+BEGIN
+SET @selectCN = CONCAT('
+select e1.id1 as x, e2.id1 as y, count(*) as score
+from ',name,'_edges as e1,
+     ',name,'_edges as e2
+where e1.id1<e2.id1 and e1.id2=e2.id2
+group by x,y
+order by score desc
+limit 0,100;');
+
+PREPARE cn FROM @selectCN;
+EXECUTE cn;
+
+END $$
+
 CREATE DEFINER=`gdbb`@`localhost` PROCEDURE `common_neighbors`( IN name VARCHAR(16) )
 BEGIN
 SET @selectCN = CONCAT('
@@ -73,4 +89,4 @@ limit 0,100;');
 PREPARE cn FROM @selectCN;
 EXECUTE cn;
 
-END
+END $$
