@@ -56,4 +56,5 @@ innodb_additional_mem_pool_size = 512M
 innodb_buffer_pool_size = 512M
 innodb_log_file_size = 256M
 innodb_log_buffer_size = 256M
+max_sp_recursion_depth=10
 ```
