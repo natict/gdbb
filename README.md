@@ -12,9 +12,14 @@ which can be found here: http://dblp.uni-trier.de/xml/
 
 Prerequisites
 =============
+* axel (to download DBLP, can be replaced with wget)
+* bash
 * python2.7
 * python-lxml
+* python-redis (https://github.com/andymccurdy/redis-py)
 * mysql-server
+* mysql-client
+* redis-server (http://redis.io/topics/quickstart)
 
 Quick Start
 ===========
@@ -49,7 +54,7 @@ chmod u+x ./benchmark-mysql.sh
 Notes
 =====
 * Graph generation is done in-memory, make sure you have enough
-* Some MySQL configuration changes are recommended (significantly speedup load time):
+* Some MySQL configuration changes are recommended (significantly speedup load time, allow recursive procedures):
 
 ```
 innodb_additional_mem_pool_size = 512M
