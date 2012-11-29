@@ -16,7 +16,8 @@ function tprint() {
 	ds=$((dt % 60))
 	dm=$(((dt / 60) % 60))
 	dh=$((dt / 3600))
-	printf '%d:%02d:%02d' $dh $dm $ds
+	#printf '%d:%02d:%02d' $dh $dm $ds
+	printf '%d' $dt
 }
 
 function timer()

@@ -17,9 +17,9 @@ loadCSV() {
 	local csv_file="$(readlink -f $2)"
 	echo -e "\t$name : $(wc -l $csv_file | cut -f1 -d' ')"
 	t=$(timer)
-	echo -e "\tLoading ${name}..."
+	echo -e "\tLoading ${name}:"
 	gdbbExecute "LOAD DATA LOCAL INFILE '$csv_file' INTO TABLE $name FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';"
-	printf '\tElapsed time: %s\n' $(timer $t)
+	printf '\t\tElapsed time: %s\n' $(timer $t)
 }
 
 gdbbExecuteProc() {
@@ -67,6 +67,10 @@ gdbbExecutePerX() {
 	rm $tmpfile
 }
 
+gdbbPrintRecCount() {
+	printf "\t\tRecords: %d\n" $(echo "select count(*) as c from ${1};" | $MYSQL_CMD | tail -n1)
+}
+
 for g in ${GRAPH_NAMES[@]}; do
 
 	echo -e "Benchmarking data-set $g:"
@@ -83,8 +87,11 @@ for g in ${GRAPH_NAMES[@]}; do
 
 	# Execute global benchmarks
 	gdbbExecuteProcT "create_cn_table" "Creating common neighbors table"
+	gdbbPrintRecCount "cn"
 	gdbbExecuteProcT "create_cnc_table" "Creating common neighbors count table"
+	gdbbPrintRecCount "cnc"
 	gdbbExecuteProcT "create_neighbors_table" "Creating neighbors table"
+	gdbbPrintRecCount "neighbors"
 	gdbbExecuteProcT "b_Common_Neighbors" "Benchmarking Common Neighbors" "${g}/Common_Neighbors.out"
 	gdbbExecuteProcT "b_Jaccard_Coefficient" "Benchmarking Jaccard's Coefficient" "${g}/Jaccard_Coefficient.out"
 	gdbbExecuteProcT "b_Adamic_Adar" "Benchmarking Adamic/Adar" "${g}/Adamic_Adar.out"
