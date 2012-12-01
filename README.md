@@ -63,3 +63,5 @@ innodb_log_file_size = 256M
 innodb_log_buffer_size = 256M
 max_sp_recursion_depth=10
 ```
+
+* Using the latest versions of redis-server and redis-py significantly improves performance
