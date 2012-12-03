@@ -51,6 +51,13 @@ chmod u+x ./benchmark-mysql.sh
 ./benchmark-mysql.sh
 ```
 
+* Execute Redis benchmark:
+
+```
+chmod u+x ./benchmark-redis.py
+./benchmark-redis.py
+```
+
 Notes
 =====
 * Graph generation is done in-memory, make sure you have enough
