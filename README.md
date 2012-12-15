@@ -51,11 +51,11 @@ chmod u+x ./benchmark-mysql.sh
 ./benchmark-mysql.sh
 ```
 
-* Execute Redis benchmark:
+* Execute Redis benchmark (i.e. for all_core3):
 
 ```
 chmod u+x ./benchmark-redis.py
-./benchmark-redis.py
+./benchmark-redis.py -v -f all_core3/edges.csv
 ```
 
 Notes
@@ -72,3 +72,9 @@ max_sp_recursion_depth=10
 ```
 
 * Using the latest versions of redis-server and redis-py significantly improves performance
+* Currently the Lua scripts are redis-calls optimized and NOT memory optimized
+* Some Redis settings are required:
+
+```
+lua-time-limit 600000	# 10 Minutes
+```
