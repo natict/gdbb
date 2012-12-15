@@ -358,6 +358,66 @@ def x_Graph_Distance(redis_interface, x, limit, output=False):
 	d.pop(x)
 	if output: printDictByVal(d, limit)
 
+def x_Katz_Lua(redis_interface, x, limit, max_depth, beta, output=False):
+	lua_script = """
+		local x = tostring(KEYS[1]);
+		local limit = tonumber(ARGV[1]);
+		local max_depth = tonumber(ARGV[2]);
+		local beta = tonumber(ARGV[3]);
+		local paths = {};
+		local reachables = {};
+		local l = 0;
+		paths[l] = {};
+		paths[l][x] = 1;
+		while l < max_depth do
+		  l = l + 1;
+		  paths[l] = {};
+		  for z,vz in pairs(paths[l-1]) do
+			for k,y in pairs(redis.call('smembers', z)) do
+			  paths[l][y] = (paths[l][y] or 0) + vz;
+			  if y ~= x then reachables[y] = 0; end;
+			end;
+		  end;
+		end;
+		local function katz(y)
+		  local kval = 0;
+		  for l = 1,max_depth,1 do
+			kval = kval + (beta^l)*(paths[l][y] or 0);
+		  end;
+		  return kval;
+		end;
+		local ttop = {};
+		local min = math.huge;
+		local mini = '';
+		local tmpval = 0;
+		for k,v in pairs(reachables) do
+		  tmpval = katz(k);
+		  if (#ttop < limit) then      
+			table.insert(ttop, {k,tmpval});
+			if tmpval<min then min=tmpval; mini=table.maxn(ttop); end;
+		  else
+			if tmpval>min then
+			  ttop[mini] = {k,tmpval};
+			  min = math.huge;
+			  for i = 1,#ttop,1 do
+				if ttop[i][2]<min then min=ttop[i][2]; mini=i;  end;
+			  end;
+			end;
+		  end;
+		end;
+		table.sort(ttop, function (a,b) return a[2]>b[2]; end);
+		local tret = {};
+		for i = 1,#ttop,1 do
+		  table.insert(tret, ttop[i][1]..','..ttop[i][2]);
+		end;
+		return tret;
+	"""
+	KATZ_SCRIPT = redis_interface.register_script(lua_script)
+	for triplet in KATZ_SCRIPT(keys=[x], args=[limit, max_depth, beta]):
+		tf = triplet.split(',')
+		if output and len(tf)==3: 
+			print('%s,%s\t%s' % tuple(tf))
+
 def x_Katz(redis_interface, x, limit, max_depth, beta, output=False):
 	'''
 		Katz (unweighted) for specific node
@@ -443,7 +503,7 @@ def main():
 			rajl.randomkey, {'redis_interface': rajl, 'limit': 100, 'cache_db': rcache})
 	benchmarkFunctionLoop(x_Graph_Distance, 1000, "Graph Distance for node", 
 			rajl.randomkey, {'redis_interface': rajl, 'limit': 100})
-	benchmarkFunctionLoop(x_Katz, 1000, "Katz (unweighted) for node", 
+	benchmarkFunctionLoop(x_Katz_Lua, 1000, "Katz (unweighted) for node", 
 			rajl.randomkey, {'redis_interface': rajl, 'limit': 100, 'beta': 0.1, 'max_depth': 4})
 
 if __name__ == "__main__":
