@@ -4,11 +4,11 @@ gdbb
 
 Benchmark graph link-prediction algorithms overs different DBMS
 
-The Link Prediction Problem for Social Networks:
-http://www.cs.cornell.edu/home/kleinber/link-pred.pdf
+Algorithms can be found in [The Link Prediction Problem for Social Networks](http://www.cs.cornell.edu/home/kleinber/link-pred.pdf)
 
-Graphs are extracted from the DBLP Computer Science Bibliography in its XML version,
-which can be found here: http://dblp.uni-trier.de/xml/
+Graphs are extracted from the [DBLP Computer Science Bibliography XML](http://dblp.uni-trier.de/xml/)
+
+Results can be found [here](https://docs.google.com/spreadsheet/ccc?key=0AiFl0Xaks4G-dG9jZnJWWTF1cG5DZ0hjZk52d0JPMVE#gid=1)
 
 Prerequisites
 =============
@@ -16,10 +16,10 @@ Prerequisites
 * bash
 * python2.7
 * python-lxml
-* python-redis (https://github.com/andymccurdy/redis-py)
+* [python-redis](https://github.com/andymccurdy/redis-py)
 * mysql-server
 * mysql-client
-* redis-server (http://redis.io/topics/quickstart)
+* [redis-server](http://redis.io/topics/quickstart)
 
 Quick Start
 ===========
