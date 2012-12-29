@@ -12,14 +12,16 @@ Results can be found [here](https://docs.google.com/spreadsheet/ccc?key=0AiFl0Xa
 
 Prerequisites
 =============
-* axel (to download DBLP, can be replaced with wget)
-* bash
-* python2.7
-* python-lxml
+* [axel](https://alioth.debian.org/projects/axel/) (to download DBLP, can be replaced with wget)
+* [bash](http://tiswww.case.edu/php/chet/bash/bashtop.html)
+* [python 2.7](http://www.python.org/getit/)
+* [python-lxml](http://lxml.de/)
 * [python-redis](https://github.com/andymccurdy/redis-py)
-* mysql-server
-* mysql-client
+* [mysql 5.5](http://dev.mysql.com/downloads/mysql/)
 * [redis-server](http://redis.io/topics/quickstart)
+* [Neo4J Community 1.8.1](http://www.neo4j.org/download)
+* [Oracle JDK 6](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
+* [py2neo](http://py2neo.org/)
 
 Quick Start
 ===========
@@ -54,8 +56,8 @@ chmod u+x ./benchmark-mysql.sh
 * Execute Redis benchmark (i.e. for all_core3):
 
 ```
-chmod u+x ./benchmark-redis.py
-./benchmark-redis.py -v -f all_core3/edges.csv
+chmod u+x ./benchmark_redis.py
+./benchmark_redis.py -v -f all_core3/edges.csv
 ```
 
 Notes
