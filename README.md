@@ -19,7 +19,7 @@ Prerequisites
 * [python-redis](https://github.com/andymccurdy/redis-py)
 * [mysql 5.5](http://dev.mysql.com/downloads/mysql/)
 * [redis-server](http://redis.io/topics/quickstart)
-* [Neo4J Community 1.8.1](http://www.neo4j.org/download)
+* [Neo4J Community 1.9.M03](http://www.neo4j.org/download)
 * [Oracle JDK 6](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 * [py2neo](http://py2neo.org/)
 
@@ -35,29 +35,37 @@ cd gdbb
 * Generate graphs:
 
 ```
-chmod u+x ./mkgraphs.sh
 ./mkgraphs.sh
 ```
 
 * Create MySQL tables and procedures (you'll need mysql root):
 
 ```
-chmod u+x ./init-mysql.sh
 ./init-mysql.sh
-```
+  ```
 
 * Execute MySQL benchmark:
 
 ```
-chmod u+x ./benchmark-mysql.sh
 ./benchmark-mysql.sh
 ```
 
 * Execute Redis benchmark (i.e. for all_core3):
 
 ```
-chmod u+x ./benchmark_redis.py
 ./benchmark_redis.py -v -f all_core3/edges.csv
+```
+
+* Create Neo4J graphs (you'll need to be a sudo-er) (i.e. for all_core3):
+
+```
+./init-neo4j.sh all_core3/
+```
+
+* Execute Neo4J benchmark:
+
+```
+./benchmark_neo4j.py
 ```
 
 Notes
@@ -79,4 +87,14 @@ max_sp_recursion_depth=10
 
 ```
 lua-time-limit 600000	# 10 Minutes
+```
+
+* Let the Neo4J JVM to allocate more heap (conf/neo4j-wrapper.conf)
+
+```
+# Initial Java Heap Size (in MB)
+wrapper.java.initmemory=1024
+
+# Maximum Java Heap Size (in MB)
+wrapper.java.maxmemory=16384
 ```
