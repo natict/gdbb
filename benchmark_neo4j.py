@@ -41,6 +41,16 @@ pGetTopN = """
 """
 
 # bCommonNeighbors Cypher perform really bad with multiple start points (In particular, with *)
+bCommonNeighbors = '''
+	START a=node(*) 
+	WHERE a.neighbors!>%d 
+	WITH a 
+	MATCH (a)-[:COAUTH]->(b)<-[:COAUTH]-(c) 
+	WHERE a.nid<c.nid 
+	RETURN a.nid,c.nid,count(b) AS cn 
+	ORDER BY cn DESC 
+	LIMIT 100
+'''
 
 xCommonNeighbors = """
 	START a=node({n}) 
@@ -121,10 +131,20 @@ def tGraphDistance(graph_db, params):
 	lim = 100
 	pret = None
 	for d in xrange(1,5):
-		ret, match = cypher.execute(graph_db, xGraphDistance % (d,d,lim), params, error_handler=print)
+		ret, meta = cypher.execute(graph_db, xGraphDistance % (d,d,lim), params, error_handler=print)
 		if len(ret) != lim and ret != pret:
 			pret = ret
 		else:
+			return
+
+@benchmark
+def tCommonNeighbors(graph_db):
+	ret, meta = cypher.execute(graph_db, "start a=node(*) return max(a.neighbors!)")
+	threshold = ret[0][0] or 0
+	while (threshold>0):
+		threshold /= 2
+		ret, meta = cypher.execute(graph_db, bCommonNeighbors % threshold, {}, error_handler=print)
+		if ret[-1][2] > threshold:
 			return
 
 
@@ -134,6 +154,7 @@ def main():
 	
 	print("addNeighborsProperty", benchmarkCypher(graph_db, pInitNeighbors, {}) + benchmarkCypher(graph_db, pSetNeighbors, {}))
 	print("generateTopNIndex", generateTopNIndex(graph_db))
+	print("bCommonNeighbors", tCommonNeighbors(graph_db))
 	print("xCommonNeighbors", randomLoopBenchmark(graph_db, xCommonNeighbors, node_count, 1000))
 	print("xJaccardsCoefficient", randomLoopBenchmark(graph_db, xJaccardsCoefficient, node_count, 1000))
 	print("xGraphDistance", randomLoopBenchmark(graph_db, tGraphDistance, node_count, 1000))
