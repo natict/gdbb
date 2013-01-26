@@ -1,7 +1,11 @@
-# Avoid uploading raw data, graphs and outputs
+# Raw data
 *.xml
 *.dtd
+# Ouputs
 *.csv
 *.out
+# Compiled binaries
 *.pyc
 *.class
+# Temporary files
+*.swp
