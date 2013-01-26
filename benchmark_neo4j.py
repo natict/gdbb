@@ -40,6 +40,11 @@ pGetTopN = """
 	LIMIT 101
 """
 
+pGetNodeCount = """
+	START a=node(*) 
+	RETURN count(a)
+"""
+
 # bCommonNeighbors Cypher perform really bad with multiple start points (In particular, with *)
 bCommonNeighbors = '''
 	START a=node(*) 
@@ -102,6 +107,16 @@ xGraphDistance = """
 	LIMIT %d
 """
 
+pGetNID = "start a=node({n}) return a.nid"
+xRootedPageRankInit = "start n=node(*) where has(n.nid) set n.rpr = %0.16f"
+xRootedPageRankSetSource = "start x=node({n}) match (x)-[:COAUTH]->(y) with (1-%f)+%f*sum(y.rpr/y.neighbors) as nrpr,x set x.nrpr=nrpr"
+xRootedPageRankSetOther = "start x=node(*) where has(x.nid) with x match (x)-[:COAUTH]->(y) where x.nid < y.nid and x.nid <> %d with (1-%f)+%f*sum(y.rpr/y.neighbors) as nrpr,x set x.nrpr=nrpr"
+xRootedPageRankSwitch = "start n=node(*) where has (n.nrpr) set n.rpr = n.nrpr"
+xRootedPageRankQueryTop = "start y=node(*) where has(y.rpr) and y.nid <> %d return y.nid, y.rpr order by y.rpr desc limit 100"
+
+def getNodeCount(graph_db):
+	return cypher.execute(graph_db, pGetNodeCount)[0][0][0]
+
 @benchmark
 def generateTopNIndex(graph_db):
 	nodes = graph_db.get_or_create_index(neo4j.Node, "nodes")
@@ -147,10 +162,24 @@ def tCommonNeighbors(graph_db):
 		if ret[-1][2] > threshold:
 			return
 
+@benchmark
+def tRootedPageRank(graph_db, params):
+	d = 0.85	# PageRank Damping factor
+	pret, ret, cret = [], [], None
+	N = getNodeCount(graph_db)
+	xnid = cypher.execute(graph_db, pGetNID, params)[0][0][0]
+	cypher.execute(graph_db, xRootedPageRankInit % (1.0/N))
+	while (pret != cret):
+		pret = cret
+		cypher.execute(graph_db, xRootedPageRankSetSource % (d,d), params)
+		cypher.execute(graph_db, xRootedPageRankSetOther %(xnid,d,d))
+		cypher.execute(graph_db, xRootedPageRankSwitch)
+		ret, meta = cypher.execute(graph_db, xRootedPageRankQueryTop % xnid)
+		cret = [nid for nid,score in ret]
 
 def main():
 	graph_db = neo4j.GraphDatabaseService("http://localhost:7474/db/data/")
-	node_count = cypher.execute(graph_db, "start a=node(*) return count(a)")[0][0][0]
+	node_count = getNodeCount(graph_db)
 	
 	print("addNeighborsProperty", benchmarkCypher(graph_db, pInitNeighbors, {}) + benchmarkCypher(graph_db, pSetNeighbors, {}))
 	print("generateTopNIndex", generateTopNIndex(graph_db))
@@ -160,6 +189,7 @@ def main():
 	print("xGraphDistance", randomLoopBenchmark(graph_db, tGraphDistance, node_count, 1000))
 	print("xPreferentialAttachment", randomLoopBenchmark(graph_db, xPreferentialAttachment, node_count, 1000))
 	print("bPreferentialAttachment", benchmarkCypher(graph_db, bPreferentialAttachment, {}))
+	print("xRootedPageRank", randomLoopBenchmark(graph_db, tRootedPageRank, node_count, 10))
 
 if __name__ == "__main__":
 	main()
