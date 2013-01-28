@@ -41,7 +41,8 @@ pGetTopN = """
 """
 
 pGetNodeCount = """
-	START a=node(*) 
+	START a=node(*)
+	WHERE has(a.nid)
 	RETURN count(a)
 """
 
@@ -110,9 +111,9 @@ xGraphDistance = """
 pGetNID = "start a=node({n}) return a.nid"
 xRootedPageRankInit = "start n=node(*) where has(n.nid) set n.rpr = %0.16f"
 xRootedPageRankSetSource = "start x=node({n}) match (x)-[:COAUTH]->(y) with (1-%f)+%f*sum(y.rpr/y.neighbors) as nrpr,x set x.nrpr=nrpr"
-xRootedPageRankSetOther = "start x=node(*) where has(x.nid) with x match (x)-[:COAUTH]->(y) where x.nid < y.nid and x.nid <> %d with (1-%f)+%f*sum(y.rpr/y.neighbors) as nrpr,x set x.nrpr=nrpr"
+xRootedPageRankSetOther = "start x=node(*) where has(x.nid) with x match (x)-[:COAUTH]->(y) where x.nid < y.nid and x.nid <> %d with %f*sum(y.rpr/y.neighbors) as nrpr,x set x.nrpr=nrpr"
 xRootedPageRankSwitch = "start n=node(*) where has (n.nrpr) set n.rpr = n.nrpr"
-xRootedPageRankQueryTop = "start y=node(*) where has(y.rpr) and y.nid <> %d return y.nid, y.rpr order by y.rpr desc limit 100"
+xRootedPageRankQueryTop = "start y=node(*) where has(y.rpr) and y.nid <> %d return y.nid, y.rpr order by y.rpr desc limit %d"
 
 def getNodeCount(graph_db):
 	return cypher.execute(graph_db, pGetNodeCount)[0][0][0]
@@ -172,9 +173,9 @@ def tRootedPageRank(graph_db, params):
 	while (pret != cret):
 		pret = cret
 		cypher.execute(graph_db, xRootedPageRankSetSource % (d,d), params)
-		cypher.execute(graph_db, xRootedPageRankSetOther %(xnid,d,d))
+		cypher.execute(graph_db, xRootedPageRankSetOther %(xnid,d))
 		cypher.execute(graph_db, xRootedPageRankSwitch)
-		ret, meta = cypher.execute(graph_db, xRootedPageRankQueryTop % xnid)
+		ret, meta = cypher.execute(graph_db, xRootedPageRankQueryTop % (xnid,100))
 		cret = [nid for nid,score in ret]
 
 def main():
