@@ -438,6 +438,74 @@ def x_Katz(redis_interface, x, limit, max_depth, beta, output=False):
 			d[y] += (beta**l)*(paths[l].get(y, 0))
 	if output: printDictByVal(d, limit)
 
+# NOTE: RootedPageRank in Redis are a bit different from the other DBs,
+#	because we dropped the 0-neighbors nodes on import (can't have empty set as value),
+#	making N a bit smaller...
+def x_RootedPageRank(redis_interface, x, limit, output=False):
+	rpr_lua = '''
+		local d = 0.85;
+		local limit = tonumber(ARGV[1])
+		local rpr = {};
+		local nrpr = {};
+		local N = redis.call('dbsize');
+		local x = tostring(KEYS[1]);
+		local ttop = {};
+		local pttop = {0};
+		local function rprsigma(n, t)
+			local sum = 0;
+			for k2, y in pairs(redis.call('smembers', n)) do
+				sum = sum + t[y]/redis.call('scard', y);
+			end;
+			return d*sum;
+		end;
+		local function tcomp(t1,t2) 
+			if (#t1 ~= #t2) then return false; end; 
+			for i = 1,#t1,1 do 
+				if (t1[i] ~= t2[i]) then return false; end; 
+			end; 
+			return true; 
+		end;
+		for k, n in pairs(redis.call('keys', '*')) do
+			nrpr[n] = 1/N;
+		end;
+		while (not tcomp(ttop, pttop)) do
+			pttop = ttop; ttop = {};
+			rpr = nrpr; nrpr = {};
+			local min = math.huge;
+			local mini = '';
+			for k, n in pairs(redis.call('keys', '*')) do
+				nrpr[n] = rprsigma(n, rpr);
+				if n == x then 
+					nrpr[n] = nrpr[n] + (1-d); 
+				else
+					if (#ttop < limit) then
+						table.insert(ttop, n);
+						if nrpr[n]<min then min=nrpr[n]; mini=table.maxn(ttop); end;
+					else
+						if nrpr[n]>min then
+							ttop[mini] = n;
+							min = math.huge;
+							for i = 1,#ttop,1 do
+								if nrpr[ttop[i]]<min then min=nrpr[ttop[i]]; mini=i; end;
+							end;
+						end;
+					end;
+				end;
+			end;
+		end;
+		table.sort(ttop, function (a,b) return nrpr[a]>nrpr[b]; end);
+		local tret = {};
+		for i = 1,#ttop,1 do
+		  table.insert(tret, ttop[i]..','..tostring(nrpr[ttop[i]]));
+		end;
+		return tret;
+	'''
+	RPR_SCRIPT = redis_interface.register_script(rpr_lua)
+	for val in RPR_SCRIPT(keys=[x], args=[limit]):
+		fields = val.split(',')
+		if output and len(fields)==2: 
+			print('%s\t%s' % tuple(fields))
+
 def parseArgs():
 	parser = argparse.ArgumentParser(
 			description='Load graph data into Redis')
@@ -505,6 +573,8 @@ def main():
 			rajl.randomkey, {'redis_interface': rajl, 'limit': 100})
 	benchmarkFunctionLoop(x_Katz_Lua, 1000, "Katz (unweighted) for node", 
 			rajl.randomkey, {'redis_interface': rajl, 'limit': 100, 'beta': 0.1, 'max_depth': 4})
+	benchmarkFunctionLoop(x_RootedPageRank, 10, "RootedPageRank for node", 
+			rajl.randomkey, {'redis_interface': rajl, 'limit': 100})
 
 if __name__ == "__main__":
 	main()
