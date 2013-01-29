@@ -438,9 +438,6 @@ def x_Katz(redis_interface, x, limit, max_depth, beta, output=False):
 			d[y] += (beta**l)*(paths[l].get(y, 0))
 	if output: printDictByVal(d, limit)
 
-# NOTE: RootedPageRank in Redis are a bit different from the other DBs,
-#	because we dropped the 0-neighbors nodes on import (can't have empty set as value),
-#	making N a bit smaller...
 def x_RootedPageRank(redis_interface, x, limit, output=False):
 	rpr_lua = '''
 		local d = 0.85;

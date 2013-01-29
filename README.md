@@ -98,3 +98,5 @@ wrapper.java.initmemory=1024
 # Maximum Java Heap Size (in MB)
 wrapper.java.maxmemory=16384
 ```
+
+* RootedPageRank in Redis results are different from the other DBs, because there are no 0-neighbors nodes (no empty sets allowed), making the initial 1/N a bit smaller
