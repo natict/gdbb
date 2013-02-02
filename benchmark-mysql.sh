@@ -108,5 +108,5 @@ gdbbExecutePerX "x_Jaccard_Coefficient" "Benchmarking Jaccard's Coefficient for 
 gdbbExecutePerX "x_Adamic_Adar" "Benchmarking Adamic/Adar for specific node" 1000
 gdbbExecutePerX "x_Preferential_attachment" "Benchmarking Preferential attachment for specific node" 1000
 gdbbExecutePerX "x_Graph_Distance" "Benchmarking Graph Distance for specific node" 1000 ",4,100"
-gdbbExecutePerX "x_Katz" "Benchmarking Katz (unweighted) for specific node" 1000 ",4,0.1,100"
+gdbbExecutePerX "x_Katz" "Benchmarking Katz (unweighted) for specific node" 100 ",4,0.1,100"
 gdbbExecutePerX "x_RootedPageRank" "Benchmarking Rooted PageRank for specific node" 10
