@@ -44,13 +44,14 @@ gdbbExecuteProcT() {
 gdbbExecutePerX() {
 	local fn="$1"	# function name
 	local desc="$2"	# description
-	local params="${3:-}"
+	local count=$3
+	local params="${4:-}"
 	local tmpfile=$(mktemp)
 
-	echo -e "\t${desc} (1000 random nodes):"
+	echo -e "\t${desc} ($count random nodes):"
 
 	local total=$(timer)
-	local random_nodes_sql='select id from nodes order by rand() limit 1000;'
+	local random_nodes_sql="select id from nodes order by rand() limit $count;"
 	for n in $($MYSQL_CMD -NBe "$random_nodes_sql"); do
 		t=$(timer)
 		gdbbExecuteProc "$fn" "$desc" "/dev/null" "${n}${params}"
@@ -58,8 +59,8 @@ gdbbExecutePerX() {
 	done
 
 	printf "\t\tMin time: %s\n" $(tprint $(sort -n $tmpfile | sed -n 1p))
-	printf "\t\tMedian time: %s\n" $(tprint $(sort -n $tmpfile | sed -n 501p))
-	printf "\t\tMax time: %s\n" $(tprint $(sort -n $tmpfile | sed -n 1000p))
+	printf "\t\tMedian time: %s\n" $(tprint $(sort -n $tmpfile | sed -n $((count/2+1))p))
+	printf "\t\tMax time: %s\n" $(tprint $(sort -n $tmpfile | sed -n ${count}p))
 	printf "\t\tTotal time: %s\n" $(timer $total)
 	
 	# Cleanup
@@ -102,9 +103,10 @@ gdbbExecuteProcT "b_Adamic_Adar" "Benchmarking Adamic/Adar" "${g}/Adamic_Adar.ou
 gdbbExecuteProcT "b_Preferential_attachment" "Benchmarking Preferential attachment" "${g}/Preferential_attachment.out"
 
 # Execute per-x benchmarks
-gdbbExecutePerX "x_Common_Neighbors" "Benchmarking Common Neighbors for specific node"
-gdbbExecutePerX "x_Jaccard_Coefficient" "Benchmarking Jaccard's Coefficient for specific node"
-gdbbExecutePerX "x_Adamic_Adar" "Benchmarking Adamic/Adar for specific node"
-gdbbExecutePerX "x_Preferential_attachment" "Benchmarking Preferential attachment for specific node"
-gdbbExecutePerX "x_Graph_Distance" "Benchmarking Graph Distance for specific node" ",4,100"
-gdbbExecutePerX "x_Katz" "Benchmarking Katz (unweighted) for specific node" ",4,0.1,100"
+gdbbExecutePerX "x_Common_Neighbors" "Benchmarking Common Neighbors for specific node" 1000
+gdbbExecutePerX "x_Jaccard_Coefficient" "Benchmarking Jaccard's Coefficient for specific node" 1000
+gdbbExecutePerX "x_Adamic_Adar" "Benchmarking Adamic/Adar for specific node" 1000
+gdbbExecutePerX "x_Preferential_attachment" "Benchmarking Preferential attachment for specific node" 1000
+gdbbExecutePerX "x_Graph_Distance" "Benchmarking Graph Distance for specific node" 1000 ",4,100"
+gdbbExecutePerX "x_Katz" "Benchmarking Katz (unweighted) for specific node" 1000 ",4,0.1,100"
+gdbbExecutePerX "x_RootedPageRank" "Benchmarking Rooted PageRank for specific node" 10

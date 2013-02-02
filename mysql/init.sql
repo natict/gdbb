@@ -215,9 +215,9 @@ end $$
 
 # Katz (unweighted) for a given x
 # usage:
-#   call Katz(6, 4, 0.1, 100);
+#   call x_Katz(6, 4, 0.1, 100);
 # NOTE:
-#   run-time grows exponentially with depth due to the size of ptmp table (works in seconds <6)
+#   run-time grows exponentially with depth due to the size of ptmp table (works in seconds for depth<6)
 drop procedure if exists x_Katz $$
 CREATE PROCEDURE x_Katz(IN n mediumint(8) unsigned, IN depth int , IN beta double, IN lim int unsigned)
 begin
@@ -234,3 +234,49 @@ begin
     DROP TABLE IF EXISTS ptmp;
   end if;
 end $$
+
+# Rooted PageRank for a given x
+# usage:
+#   call x_RootedPageRank(6);
+drop procedure if exists x_RootedPageRank $$
+CREATE PROCEDURE x_RootedPageRank(IN n mediumint(8) unsigned)
+BEGIN
+  DROP TABLE IF EXISTS `RootedPageRankTemp`;
+  CREATE TABLE `RootedPageRankTemp` (
+      `id` mediumint(8) unsigned NOT NULL,
+      `rpr` float,
+      `nrpr` float,
+      PRIMARY KEY (`id`)
+  );
+  SET @d = 0.85; # damping factor
+  SELECT count(*) FROM nodes into @node_count;
+  # init rpr to 1/N
+  INSERT INTO `RootedPageRankTemp`
+    select id1 as `id`, NULL as `rpr`, 1.0/@node_count as `nrpr`
+    from edges
+    group by id;
+  SET @mcount = 0;
+  # update rpr until top-100 nodes converge
+  REPEAT
+      REPLACE `RootedPageRankTemp`
+        select rpr.id as id, rpr.nrpr as rpr, rpr.nrpr as nrpr
+        from  `RootedPageRankTemp` as rpr;
+      REPLACE `RootedPageRankTemp`
+        select rpr1.id as id, rpr1.rpr as rpr, (SUM(rpr2.rpr/n.neighbors)*@d) as nrpr
+        from  `RootedPageRankTemp` as rpr1,
+              edges as e,
+              neighbors as n,
+              `RootedPageRankTemp` as rpr2
+        where rpr1.id = e.id1 and n.id = e.id2 and rpr2.id = e.id2
+        group by rpr1.id;
+      UPDATE `RootedPageRankTemp` SET nrpr = nrpr + (1-@d)/@node_count WHERE id = n;
+      select count(*)
+      from
+          (SELECT @rownum := @rownum + 1 AS rn,rpr.id from `RootedPageRankTemp` rpr,(SELECT @rownum:=0) rnfoo ORDER BY `nrpr` desc LIMIT 100) newrprtop, 
+          (SELECT @rownum2 := @rownum2 + 1 AS rn,rpr.id from `RootedPageRankTemp` rpr,(SELECT @rownum2:=0) rnfoo ORDER BY `rpr` desc LIMIT 100) oldrprtop
+      where newrprtop.rn = oldrprtop.rn and newrprtop.id = oldrprtop.id
+      into @mcount;
+  UNTIL @mcount = 100 END REPEAT;
+  # return top-100 nodes
+  SELECT id, nrpr from `RootedPageRankTemp` order by nrpr desc limit 100;
+END $$
