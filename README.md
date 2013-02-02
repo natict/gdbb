@@ -44,10 +44,10 @@ cd gdbb
 ./init-mysql.sh
   ```
 
-* Execute MySQL benchmark:
+* Execute MySQL benchmark (i.e. for all_core3):
 
 ```
-./benchmark-mysql.sh
+./benchmark-mysql.sh all_core3
 ```
 
 * Execute Redis benchmark (i.e. for all_core3):

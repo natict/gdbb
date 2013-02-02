@@ -5,7 +5,6 @@ set -o errexit
 MYSQL_CMD="mysql --local-infile=1 -ugdbb gdbb"
 
 source ./commons.sh
-source ./graphs-conf.sh
 
 gdbbExecute() {
 	local cmd="$1"
@@ -71,37 +70,42 @@ gdbbPrintRecCount() {
 	printf "\t\tRecords: %d\n" $(echo "select count(*) as c from ${1};" | $MYSQL_CMD | tail -n1)
 }
 
-for g in ${GRAPH_NAMES[@]}; do
+if [ -z "$1" ] || [ ! -d "$1" ]; then
+	echo "usage: $0 <data-set>"
+	exit 1
+fi
 
-	echo -e "Benchmarking data-set $g:"
+g="$1" 
 
-	# Drop all tables
-	mysqldump -ugdbb --add-drop-table --no-data gdbb | grep ^DROP | $MYSQL_CMD
+echo -e "Benchmarking data-set $g:"
 
-	# Create nodes and edges tables
-	gdbbExecuteProc "create_graph_tables" "Creating nodes and edges tables"
+# Drop all tables
+mysqldump -ugdbb --add-drop-table --no-data gdbb | grep ^DROP | $MYSQL_CMD
 
-	# Load csv files
-	loadCSV "nodes" "${g}/nodes.csv"
-	loadCSV "edges" "${g}/edges.csv"
+# Create nodes and edges tables
+gdbbExecuteProc "create_graph_tables" "Creating nodes and edges tables"
 
-	# Execute global benchmarks
-	gdbbExecuteProcT "create_cn_table" "Creating common neighbors table"
-	gdbbPrintRecCount "cn"
-	gdbbExecuteProcT "create_cnc_table" "Creating common neighbors count table"
-	gdbbPrintRecCount "cnc"
-	gdbbExecuteProcT "create_neighbors_table" "Creating neighbors table"
-	gdbbPrintRecCount "neighbors"
-	gdbbExecuteProcT "b_Common_Neighbors" "Benchmarking Common Neighbors" "${g}/Common_Neighbors.out"
-	gdbbExecuteProcT "b_Jaccard_Coefficient" "Benchmarking Jaccard's Coefficient" "${g}/Jaccard_Coefficient.out"
-	gdbbExecuteProcT "b_Adamic_Adar" "Benchmarking Adamic/Adar" "${g}/Adamic_Adar.out"
-	gdbbExecuteProcT "b_Preferential_attachment" "Benchmarking Preferential attachment" "${g}/Preferential_attachment.out"
+# Load csv files
+loadCSV "nodes" "${g}/nodes.csv"
+loadCSV "edges" "${g}/edges.csv"
 
-	# Execute per-x benchmarks
-	gdbbExecutePerX "${g}/nodes.csv" "x_Common_Neighbors" "Benchmarking Common Neighbors for specific node"
-	gdbbExecutePerX "${g}/nodes.csv" "x_Jaccard_Coefficient" "Benchmarking Jaccard's Coefficient for specific node"
-	gdbbExecutePerX "${g}/nodes.csv" "x_Adamic_Adar" "Benchmarking Adamic/Adar for specific node"
-	gdbbExecutePerX "${g}/nodes.csv" "x_Preferential_attachment" "Benchmarking Preferential attachment for specific node"
-	gdbbExecutePerX "${g}/nodes.csv" "x_Graph_Distance" "Benchmarking Graph Distance for specific node" ",4,100"
-	gdbbExecutePerX "${g}/nodes.csv" "x_Katz" "Benchmarking Katz (unweighted) for specific node" ",4,0.1,100"
-done
+# Execute global benchmarks
+gdbbExecuteProcT "create_cn_table" "Creating common neighbors table"
+gdbbPrintRecCount "cn"
+gdbbExecuteProcT "create_cnc_table" "Creating common neighbors count table"
+gdbbPrintRecCount "cnc"
+gdbbExecuteProcT "create_neighbors_table" "Creating neighbors table"
+gdbbPrintRecCount "neighbors"
+gdbbExecuteProcT "b_Common_Neighbors" "Benchmarking Common Neighbors" "${g}/Common_Neighbors.out"
+gdbbExecuteProcT "b_Jaccard_Coefficient" "Benchmarking Jaccard's Coefficient" "${g}/Jaccard_Coefficient.out"
+gdbbExecuteProcT "b_Adamic_Adar" "Benchmarking Adamic/Adar" "${g}/Adamic_Adar.out"
+gdbbExecuteProcT "b_Preferential_attachment" "Benchmarking Preferential attachment" "${g}/Preferential_attachment.out"
+
+# Execute per-x benchmarks
+nodes="${g}/nodes.csv"
+gdbbExecutePerX $nodes "x_Common_Neighbors" "Benchmarking Common Neighbors for specific node"
+gdbbExecutePerX $nodes "x_Jaccard_Coefficient" "Benchmarking Jaccard's Coefficient for specific node"
+gdbbExecutePerX $nodes "x_Adamic_Adar" "Benchmarking Adamic/Adar for specific node"
+gdbbExecutePerX $nodes "x_Preferential_attachment" "Benchmarking Preferential attachment for specific node"
+gdbbExecutePerX $nodes "x_Graph_Distance" "Benchmarking Graph Distance for specific node" ",4,100"
+gdbbExecutePerX $nodes "x_Katz" "Benchmarking Katz (unweighted) for specific node" ",4,0.1,100"
