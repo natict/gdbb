@@ -42,16 +42,16 @@ gdbbExecuteProcT() {
 }
 
 gdbbExecutePerX() {
-	local nodes="$1"
-	local fn="$2"	# function name
-	local desc="$3"	# description
-	local params="${4:-}"
+	local fn="$1"	# function name
+	local desc="$2"	# description
+	local params="${3:-}"
 	local tmpfile=$(mktemp)
 
-	echo -e "\t${desc} (1000 first nodes):"
+	echo -e "\t${desc} (1000 random nodes):"
 
 	local total=$(timer)
-	for n in $(head -n1000 $nodes | cut -f1 -d','); do
+	local random_nodes_sql='select id from nodes order by rand() limit 1000;'
+	for n in $($MYSQL_CMD -NBe "$random_nodes_sql"); do
 		t=$(timer)
 		gdbbExecuteProc "$fn" "$desc" "/dev/null" "${n}${params}"
 		tdiff $t >> $tmpfile
@@ -102,10 +102,9 @@ gdbbExecuteProcT "b_Adamic_Adar" "Benchmarking Adamic/Adar" "${g}/Adamic_Adar.ou
 gdbbExecuteProcT "b_Preferential_attachment" "Benchmarking Preferential attachment" "${g}/Preferential_attachment.out"
 
 # Execute per-x benchmarks
-nodes="${g}/nodes.csv"
-gdbbExecutePerX $nodes "x_Common_Neighbors" "Benchmarking Common Neighbors for specific node"
-gdbbExecutePerX $nodes "x_Jaccard_Coefficient" "Benchmarking Jaccard's Coefficient for specific node"
-gdbbExecutePerX $nodes "x_Adamic_Adar" "Benchmarking Adamic/Adar for specific node"
-gdbbExecutePerX $nodes "x_Preferential_attachment" "Benchmarking Preferential attachment for specific node"
-gdbbExecutePerX $nodes "x_Graph_Distance" "Benchmarking Graph Distance for specific node" ",4,100"
-gdbbExecutePerX $nodes "x_Katz" "Benchmarking Katz (unweighted) for specific node" ",4,0.1,100"
+gdbbExecutePerX "x_Common_Neighbors" "Benchmarking Common Neighbors for specific node"
+gdbbExecutePerX "x_Jaccard_Coefficient" "Benchmarking Jaccard's Coefficient for specific node"
+gdbbExecutePerX "x_Adamic_Adar" "Benchmarking Adamic/Adar for specific node"
+gdbbExecutePerX "x_Preferential_attachment" "Benchmarking Preferential attachment for specific node"
+gdbbExecutePerX "x_Graph_Distance" "Benchmarking Graph Distance for specific node" ",4,100"
+gdbbExecutePerX "x_Katz" "Benchmarking Katz (unweighted) for specific node" ",4,0.1,100"
