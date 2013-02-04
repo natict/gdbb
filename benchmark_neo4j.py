@@ -199,8 +199,8 @@ def main():
 	graph_db = neo4j.GraphDatabaseService("http://localhost:7474/db/data/")
 	node_count = getNodeCount(graph_db)
 	ret = {}
-	ret["addNeighborsProperty"] = (benchmarkCypher(graph_db, pInitNeighbors, {}) + benchmarkCypher(graph_db, pSetNeighbors, {}))
-	ret["generateTopNIndex"] = generateTopNIndex(graph_db)
+	ret["cNeighborsIndex"] = (benchmarkCypher(graph_db, pInitNeighbors, {}) + benchmarkCypher(graph_db, pSetNeighbors, {}))
+	ret["cTopNIndex"] = generateTopNIndex(graph_db)
 	ret["bCommonNeighbors"] = tCommonNeighbors(graph_db)
 	ret["bPreferentialAttachment"] = benchmarkCypher(graph_db, bPreferentialAttachment, {})
 	ret["xCommonNeighbors"] =  randomLoopBenchmark(graph_db, xCommonNeighbors, node_count, 1000)
