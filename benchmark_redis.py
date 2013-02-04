@@ -6,6 +6,7 @@ import math
 import redis
 import sys
 import time
+import json
 
 DEBUG = False
 MAX_BUFFER_SIZE = 1000000
@@ -21,7 +22,9 @@ class benchmark(object):
 		dprint("running %s%s" %(self.func.__name__, str(args)))
 		t = time.time()
 		self.func(*args)
-		dprint("time elapsed: %g" %(time.time()-t))
+		tot = time.time()-t
+		dprint("time elapsed: %g" % tot)
+		return tot
 
 class BufferedRedisDBSets(dict):
 	'''
@@ -538,9 +541,11 @@ def benchmarkFunctionLoop(func, count, desc, randfunc, kwargs):
 	timing_arr.sort()
 	if count > 2:
 		dprint("Min: %d, Max: %d, Median: %d, Total: %d" % (timing_arr[0], timing_arr[-1], timing_arr[len(timing_arr)/2], timer(total)))
+	return {'min':timing_arr[0], 'median':timing_arr[len(timing_arr)/2], 'max':timing_arr[-1], 'total':timer(total), 'count':count}
 
 def main():
 	args = parseArgs()
+	ret = {}
 
 	rajl = redis.StrictRedis(host=args.hostname, port=args.port, db=0)
 	rcn = redis.StrictRedis(host=args.hostname, port=args.port, db=1)
@@ -550,28 +555,34 @@ def main():
 	if args.filename: 
 		loadEdgesCSVToRedis(rajl, args.filename)
 
-	b_Common_Neighbors(rajl, 100)
-
-	b_Jaccards_Coefficient(rajl, 100)
+	ret["bCommonNeighbors"] = b_Common_Neighbors(rajl, 100)
+	ret["bJaccardsCoefficient"] = b_Jaccards_Coefficient(rajl, 100)
+	ret["bAdamicAdar"] = b_Adamic_Adar(rajl, 100)
+	ret["bPreferentialAttachment"] = b_Preferential_Attachment(rajl, 100)
 	
-	b_Adamic_Adar(rajl, 100)
-	
-	b_Preferential_Attachment(rajl, 100)
-	
-	benchmarkFunctionLoop(x_Common_Neighbors, 1000, "Common Neighbors for node", 
+	ret["xCommonNeighbors"] = benchmarkFunctionLoop(x_Common_Neighbors, 
+			1000, "Common Neighbors for node", 
 			rajl.randomkey, {'redis_interface': rajl, 'limit': 100})
-	benchmarkFunctionLoop(x_Jaccards_Coefficient, 1000, "Jaccard's Coefficient for node", 
+	ret["xJaccardsCoefficient"] = benchmarkFunctionLoop(x_Jaccards_Coefficient, 
+			1000, "Jaccard's Coefficient for node", 
 			rajl.randomkey, {'redis_interface': rajl, 'limit': 100})
-	benchmarkFunctionLoop(x_Adamic_Adar, 1000, "Adamic/Adar for node", 
+	ret["xAdamicAdar"] = benchmarkFunctionLoop(x_Adamic_Adar, 
+			1000, "Adamic/Adar for node", 
 			rajl.randomkey, {'redis_interface': rajl, 'limit': 100})
-	benchmarkFunctionLoop(x_Preferential_Attachment, 1000, "Preferential Attachment for node", 
+	ret["xPreferentialAttachment"] = benchmarkFunctionLoop(x_Preferential_Attachment, 
+			1000, "Preferential Attachment for node", 
 			rajl.randomkey, {'redis_interface': rajl, 'limit': 100, 'cache_db': rcache})
-	benchmarkFunctionLoop(x_Graph_Distance, 1000, "Graph Distance for node", 
+	ret["xGraphDistance"] = benchmarkFunctionLoop(x_Graph_Distance, 
+			1000, "Graph Distance for node", 
 			rajl.randomkey, {'redis_interface': rajl, 'limit': 100})
-	benchmarkFunctionLoop(x_Katz_Lua, 100, "Katz (unweighted) for node", 
+	ret["xKatz"] = benchmarkFunctionLoop(x_Katz_Lua, 
+			100, "Katz (unweighted) for node", 
 			rajl.randomkey, {'redis_interface': rajl, 'limit': 100, 'beta': 0.1, 'max_depth': 3})
-	benchmarkFunctionLoop(x_RootedPageRank, 10, "RootedPageRank for node", 
+	ret["xRootedPageRank"] = benchmarkFunctionLoop(x_RootedPageRank, 
+			10, "RootedPageRank for node", 
 			rajl.randomkey, {'redis_interface': rajl, 'limit': 100})
+
+	print(json.dumps(ret))
 
 if __name__ == "__main__":
 	main()
