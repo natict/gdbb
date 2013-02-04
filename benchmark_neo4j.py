@@ -4,6 +4,7 @@ from __future__ import print_function
 from random import randint
 from py2neo import neo4j, rest, cypher
 
+import json
 import time
 
 class benchmark(object):
@@ -146,7 +147,7 @@ def randomLoopBenchmark(graph_db, query, node_count, loop_count):
 			l.append(benchmarkCypher(graph_db, query, {'n': randint(1,node_count-1)}))
 	t = time.time()-t
 	l.sort()
-	return l[0], l[len(l)/2], l[-1], t	# min, median, max, total
+	return {'min':l[0], 'median':l[len(l)/2], 'max':l[-1], 'total':t, 'count':loop_count}	# min, median, max, total
 
 @benchmark
 def tGraphDistance(graph_db, params):
@@ -197,17 +198,18 @@ def tRootedPageRank(graph_db, params):
 def main():
 	graph_db = neo4j.GraphDatabaseService("http://localhost:7474/db/data/")
 	node_count = getNodeCount(graph_db)
-	
-	print("addNeighborsProperty", benchmarkCypher(graph_db, pInitNeighbors, {}) + benchmarkCypher(graph_db, pSetNeighbors, {}))
-	print("generateTopNIndex", generateTopNIndex(graph_db))
-	print("bCommonNeighbors", tCommonNeighbors(graph_db))
-	print("bPreferentialAttachment", benchmarkCypher(graph_db, bPreferentialAttachment, {}))
-	print("xCommonNeighbors", randomLoopBenchmark(graph_db, xCommonNeighbors, node_count, 1000))
-	print("xJaccardsCoefficient", randomLoopBenchmark(graph_db, xJaccardsCoefficient, node_count, 1000))
-	print("xGraphDistance", randomLoopBenchmark(graph_db, tGraphDistance, node_count, 1000))
-	print("xPreferentialAttachment", randomLoopBenchmark(graph_db, xPreferentialAttachment, node_count, 1000))
-	print("xKatz", randomLoopBenchmark(graph_db, tKatz, node_count, 100))
-	print("xRootedPageRank", randomLoopBenchmark(graph_db, tRootedPageRank, node_count, 10))
+	ret = {}
+	ret["addNeighborsProperty"] = (benchmarkCypher(graph_db, pInitNeighbors, {}) + benchmarkCypher(graph_db, pSetNeighbors, {}))
+	ret["generateTopNIndex"] = generateTopNIndex(graph_db)
+	ret["bCommonNeighbors"] = tCommonNeighbors(graph_db)
+	ret["bPreferentialAttachment"] = benchmarkCypher(graph_db, bPreferentialAttachment, {})
+	ret["xCommonNeighbors"] =  randomLoopBenchmark(graph_db, xCommonNeighbors, node_count, 1000)
+	ret["xJaccardsCoefficient"] =  randomLoopBenchmark(graph_db, xJaccardsCoefficient, node_count, 1000)
+	ret["xGraphDistance"] =  randomLoopBenchmark(graph_db, tGraphDistance, node_count, 1000)
+	ret["xPreferentialAttachment"] =  randomLoopBenchmark(graph_db, xPreferentialAttachment, node_count, 1000)
+	ret["xKatz"] =  randomLoopBenchmark(graph_db, tKatz, node_count, 100)
+	ret["xRootedPageRank"] =  randomLoopBenchmark(graph_db, tRootedPageRank, node_count, 10)
+	print(json.dumps(ret))
 
 if __name__ == "__main__":
 	main()
