@@ -21,17 +21,37 @@ if [ ! -r dblp.dtd ]; then
 fi
 popd
 
-# Generate Graphs
-for i in $(seq 0 $((${#GRAPH_NAMES[@]}-1))); do 
+# Generate DBLP Graphs
+for i in $(seq 0 $((${#DBLP_GRAPH_NAMES[@]}-1))); do 
 	t=$(timer)
-	echo "Generating ${GRAPH_NAMES[$i]}:"
-	./dblp2graph.py -i $XML_DIR -o ./${GRAPH_NAMES[$i]} ${GRAPH_OPTS[$i]}
+	echo "Generating ${DBLP_GRAPH_NAMES[$i]}:"
+	./dblp2graph.py -i $XML_DIR -o ./${DBLP_GRAPH_NAMES[$i]} ${DBLP_GRAPH_OPTS[$i]}
 	printf 'Elapsed time: %s\n' $(timer $t)
+done
+
+# Generate SNAP Graphs
+for i in $(seq 0 $((${#SNAP_GRAPH_NAMES[@]}-1))); do
+	mkdir -p ${SNAP_GRAPH_NAMES[$i]}
+	pushd ${SNAP_GRAPH_NAMES[$i]}
+	wget $SNAP_BASE_URL/${SNAP_GRAPH_NAMES[$i]}.${SNAP_GRAPH_OPTS[$i]}
+	if [ ${SNAP_GRAPH_OPTS[$i]} == "txt.gz" ]; then
+		gunzip ${SNAP_GRAPH_NAMES[$i]}.${SNAP_GRAPH_OPTS[$i]}
+		grep -v ^# ${SNAP_GRAPH_NAMES[$i]}.txt | tr -d '\r' | awk '{print $1","$2}' > edges.csv
+		rm ${SNAP_GRAPH_NAMES[$i]}.txt
+	elif [ ${SNAP_GRAPH_OPTS[$i]} == "tar.gz" ]; then
+		tmpdir=$(mktemp -d ./tmpXXXXXX)
+		tar -xzf ${SNAP_GRAPH_NAMES[$i]}.${SNAP_GRAPH_OPTS[$i]} -C $tmpdir
+		cat $tmpdir/${SNAP_GRAPH_NAMES[$i]}/*.edges | awk '{print $1","$2}' > edges.csv
+		rm ${SNAP_GRAPH_NAMES[$i]}.${SNAP_GRAPH_OPTS[$i]}
+		rm -rf $tmpdir
+	fi
+	for i in $(seq 0 $(cat edges.csv | tr ',' '\n' | sort -n | uniq | tail -n1)); do echo $i,Node $i >> nodes.csv; done
+	popd
 done
 
 # Print stats
 printf "Set Name : Node Count : Edge Count : Node Size : Edge Size\n"
-for s in ${GRAPH_NAMES[@]}; do
+for s in ${ALL_GRAPH_NAMES[@]}; do
 	printf "$s : %d : %d : %s : %s\n" \
 		$(wc -l ./$s/nodes.csv | cut -f1 -d' ') \
 		$(wc -l ./$s/edges.csv | cut -f1 -d' ') \
