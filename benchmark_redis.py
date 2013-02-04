@@ -569,7 +569,7 @@ def main():
 	benchmarkFunctionLoop(x_Graph_Distance, 1000, "Graph Distance for node", 
 			rajl.randomkey, {'redis_interface': rajl, 'limit': 100})
 	benchmarkFunctionLoop(x_Katz_Lua, 100, "Katz (unweighted) for node", 
-			rajl.randomkey, {'redis_interface': rajl, 'limit': 100, 'beta': 0.1, 'max_depth': 4})
+			rajl.randomkey, {'redis_interface': rajl, 'limit': 100, 'beta': 0.1, 'max_depth': 3})
 	benchmarkFunctionLoop(x_RootedPageRank, 10, "RootedPageRank for node", 
 			rajl.randomkey, {'redis_interface': rajl, 'limit': 100})
 

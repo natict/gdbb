@@ -172,7 +172,7 @@ def tCommonNeighbors(graph_db):
 @benchmark
 def tKatz(graph_db, params):
 	beta = 0.1
-	maxDepth = 4
+	maxDepth = 3
 	cypher.execute(graph_db, xKatzInit)
 	for i in xrange(1,maxDepth+1):
 		cypher.execute(graph_db, xKatzGenerateCypher(0.1,i), params)
