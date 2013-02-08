@@ -46,6 +46,7 @@ def main():
 	ret["cCommonNeighbors"] = runMySQLProcedure(db, "create_cn_table")
 	ret["cCommonNeighborsCount"] = runMySQLProcedure(db, "create_cnc_table")
 	ret["cNeighborsIndex"] = runMySQLProcedure(db, "create_neighbors_table")
+	ret["cTopNIndex"] = runMySQLProcedure(db, "create_topn_table")
 
 	ret["bCommonNeighbors"] = runMySQLProcedure(db, "b_Common_Neighbors")
 	ret["bJaccardsCoefficient"] = runMySQLProcedure(db, "b_Jaccard_Coefficient")

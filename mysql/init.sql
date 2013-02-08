@@ -74,6 +74,25 @@ BEGIN
   group by x;
 END $$
 
+DROP PROCEDURE IF EXISTS `create_topn_table` $$
+CREATE DEFINER=`gdbb`@`localhost` PROCEDURE `create_topn_table`()
+BEGIN
+ DROP TABLE IF EXISTS `topn`;
+
+ CREATE TABLE `topn` (
+  `id` mediumint(8) unsigned NOT NULL,
+  `neighbors` mediumint(8) unsigned NOT NULL,
+  PRIMARY KEY (`id`)
+ );
+
+ INSERT INTO `topn`
+  select id, neighbors
+  from neighbors
+  order by neighbors desc
+  limit 101;
+END $$
+
+
 # Common Neighbors
 DROP PROCEDURE IF EXISTS `b_Common_Neighbors` $$
 CREATE DEFINER=`gdbb`@`localhost` PROCEDURE `b_Common_Neighbors`()
@@ -115,17 +134,16 @@ BEGIN
 END $$
 
 # Preferential attachment
-# NOTE: limit n returns n-choose-2 results (i.e. 15 choose 2 = 105)
 DROP PROCEDURE IF EXISTS `b_Preferential_attachment` $$
 CREATE DEFINER=`gdbb`@`localhost` PROCEDURE `b_Preferential_attachment`()
 BEGIN
-	select n1.id as x, 
-	    n2.id as y, 
-	    (n1.neighbors * n2.neighbors) as s
-	from (select * from neighbors order by neighbors desc limit 15) as n1,
-		(select * from neighbors order by neighbors desc limit 15) as n2
-	where n1.id<n2.id
-	order by s desc;
+	select t1.id as x, 
+		t2.id as y, 
+		t1.neighbors * t2.neighbors as s 
+		from topn as t1, topn as t2 
+		where t1.id < t2.id 
+		order by s desc 
+		limit 100;
 END $$
 
 # Common Neighbors for given node x
@@ -180,11 +198,13 @@ END $$
 DROP PROCEDURE IF EXISTS `x_Preferential_attachment` $$
 CREATE DEFINER=`gdbb`@`localhost` PROCEDURE `x_Preferential_attachment`(IN x mediumint(8) unsigned)
 BEGIN
-	select n2.id as y, 
-    	(n1.neighbors * n2.neighbors) as s
-	from neighbors as n1 
-		join neighbors as n2 on (n1.id = x)
-	order by s desc;
+	select t.id as y, 
+    	(t.neighbors * n.neighbors) as s
+	from topn as t,
+		neighbors as n
+	where n.id = x and t.id <> x
+	order by s desc
+	limit 100;
 END $$
 
 
