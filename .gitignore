@@ -3,6 +3,7 @@
 *.dtd
 # Ouputs
 *.csv
+*.json
 *.out
 # Compiled binaries
 *.pyc
