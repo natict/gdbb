@@ -275,7 +275,6 @@ def b_Adamic_Adar(redis_interface, limit, output=False):
 		if output and len(tf)==3: 
 			print('%s,%s\t%s' % tuple(tf))
 
-
 @benchmark
 def b_Preferential_Attachment (redis_interface, limit, output=False):
 	'''
@@ -285,7 +284,7 @@ def b_Preferential_Attachment (redis_interface, limit, output=False):
 	t = int(math.ceil((1+math.sqrt(1+8*(limit+1)))/2)) # reverse binomial coefficient
 	dt = TopNDict(t)
 	for y in redis_interface.keys():
-		dt.add(y, redis_interface.scard(y))
+		dt.add(y, int(redis_interface.get(y)))
 	d = {}
 	for c in itertools.combinations(dt, 2):
 		d[c] = dt[c[0]] * dt[c[1]]
@@ -326,18 +325,20 @@ def x_Adamic_Adar(redis_interface, x, limit, output=False):
 		d[y] = sum(map(lambda z: float(1)/math.log10(redis_interface.scard(z)), d[y]))
 	if output: printDictByVal(d, limit)
 
-def x_Preferential_Attachment (redis_interface, x, limit, cache_db, output=False):
+@benchmark
+def generateTopNIndex(redis_interface, cache_db, N):
+	''' Generate cache DB (nodes with top #neighbors) '''
+	d = TopNDict(N)
+	cache_db.flushdb()
+	for y in redis_interface.keys():
+		d.add(y, redis_interface.scard(y))
+	for y in d.iterkeys():
+		cache_db.set(y, d[y])
+
+def x_Preferential_Attachment(redis_interface, x, limit, cache_db, output=False):
 	'''
 		Preferential Attachment for specific node
 	'''
-	if not (0 < cache_db.dbsize() <= limit+1):
-		#Generate cache DB
-		d = TopNDict(limit+1)
-		cache_db.flushdb()
-		for y in redis_interface.keys():
-			if y != x: d.add(y, redis_interface.scard(y))
-		for y in d.iterkeys():
-			cache_db.set(y, d[y])
 	nx = len(redis_interface.smembers(x))
 	d = {}
 	for y in cache_db.keys():
@@ -548,17 +549,16 @@ def main():
 	ret = {}
 
 	rajl = redis.StrictRedis(host=args.hostname, port=args.port, db=0)
-	rcn = redis.StrictRedis(host=args.hostname, port=args.port, db=1)
 	rcache = redis.StrictRedis(host=args.hostname, port=args.port, db=2)
-	rcache.flushdb()
 
 	if args.filename: 
 		loadEdgesCSVToRedis(rajl, args.filename)
 
+	ret["cTopNIndex"] = generateTopNIndex(rajl, rcache, 101)
 	ret["bCommonNeighbors"] = b_Common_Neighbors(rajl, 100)
 	ret["bJaccardsCoefficient"] = b_Jaccards_Coefficient(rajl, 100)
 	ret["bAdamicAdar"] = b_Adamic_Adar(rajl, 100)
-	ret["bPreferentialAttachment"] = b_Preferential_Attachment(rajl, 100)
+	ret["bPreferentialAttachment"] = b_Preferential_Attachment(rcache, 100)
 	
 	ret["xCommonNeighbors"] = benchmarkFunctionLoop(x_Common_Neighbors, 
 			1000, "Common Neighbors for node", 
