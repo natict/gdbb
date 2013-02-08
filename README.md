@@ -16,6 +16,7 @@ Prerequisites
 * [bash](http://tiswww.case.edu/php/chet/bash/bashtop.html)
 * [python 2.7](http://www.python.org/getit/)
 * [python-lxml](http://lxml.de/)
+* [python-mysqldb](http://mysql-python.sourceforge.net/)
 * [python-redis](https://github.com/andymccurdy/redis-py)
 * [mysql 5.5](http://dev.mysql.com/downloads/mysql/)
 * [redis-server](http://redis.io/topics/quickstart)
@@ -38,16 +39,16 @@ cd gdbb
 ./mkgraphs.sh
 ```
 
-* Create MySQL tables and procedures (you'll need mysql root):
+* Create MySQL tables and procedures (you'll need mysql root), e.g. for all_core3:
 
 ```
-./init-mysql.sh
+./init-mysql.sh all_core3
   ```
 
-* Execute MySQL benchmark (i.e. for all_core3):
+* Execute MySQL benchmark:
 
 ```
-./benchmark-mysql.sh all_core3
+./benchmark_mysql.py
 ```
 
 * Execute Redis benchmark (i.e. for all_core3):
