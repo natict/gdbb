@@ -2,17 +2,12 @@
 
 from __future__ import print_function
 from GDBB_Commons import benchmark
+from GDBB_Commons import getRandomNodes
 
 import json
+import sys
 import time
 import MySQLdb
-
-GET_RANDOM_NODES_SQL = """
-	SELECT id 
-	FROM nodes 
-	ORDER BY RAND() 
-	LIMIT %d
-"""
 
 @benchmark
 def runMySQLProcedure(db, func_name, params=[], output=False):
@@ -21,16 +16,9 @@ def runMySQLProcedure(db, func_name, params=[], output=False):
 	if output: print(cur.fetchall())
 	cur.close()
 
-def getRandomNodes(db, count):
-	cur = db.cursor()
-	cur.execute(GET_RANDOM_NODES_SQL % count)
-	random_nodes = [e for t in cur.fetchall() for e in t]
-	cur.close()
-	return random_nodes
-
 def randomLoopBenchmark(db, func_name, loop_count, params=[]):
 	if loop_count == 0: return
-	random_nodes = getRandomNodes(db, loop_count)
+	random_nodes = getRandomNodes(sys.argv[1], count=loop_count)
 	l = []
 	t = time.time()
 	for nid in random_nodes:

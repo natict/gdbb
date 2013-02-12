@@ -49,6 +49,11 @@ for i in $(seq 0 $((${#SNAP_GRAPH_NAMES[@]}-1))); do
 	popd
 done
 
+# Generate random permutation of the nodes file
+for s in ${ALL_GRAPH_NAMES[@]}; do
+    shuf $s/nodes.csv -o $s/rand_nodes.csv
+done
+
 # Print stats
 printf "Set Name : Node Count : Edge Count : Node Size : Edge Size\n"
 for s in ${ALL_GRAPH_NAMES[@]}; do

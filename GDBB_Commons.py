@@ -2,6 +2,8 @@
 
 from __future__ import print_function
 
+import os
+import sys
 import time
 
 class benchmark(object):
@@ -16,3 +18,19 @@ class benchmark(object):
 		else:
 			print("DEBUG: time elapsed: %g" % t)
 			return ret
+
+# Return a list of random node ids from a given file 
+def getRandomNodes(dataset, filename='rand_nodes.csv', count=1000):
+    ret = []
+    lineCounter = 0
+    try:
+        with open(os.path.join(dataset, filename)) as f:
+            for line in f:
+                pair = line.split(',')
+                if len(pair) == 2:
+                    ret.append(pair[0])
+                if len(ret) >= count:
+                    break
+    except:
+        sys.stderr.write('unable to read random nodes file (%s)' % os.path.join(dataset, filename))
+    return ret
