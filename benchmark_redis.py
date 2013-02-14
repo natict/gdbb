@@ -4,9 +4,12 @@ import argparse
 import itertools
 import math
 import redis
+import os
 import sys
 import time
 import json
+
+from GDBB_Commons import *
 
 DEBUG = False
 MAX_BUFFER_SIZE = 1000000
@@ -14,17 +17,6 @@ MAX_BUFFER_SIZE = 1000000
 def dprint(msg):
 	if DEBUG:
 		print("DEBUG: " + str(msg))
-
-class benchmark(object):
-	def __init__(self, func):
-		self.func = func
-	def __call__(self, *args):
-		dprint("running %s%s" %(self.func.__name__, str(args)))
-		t = time.time()
-		self.func(*args)
-		tot = time.time()-t
-		dprint("time elapsed: %g" % tot)
-		return tot
 
 class BufferedRedisDBSets(dict):
 	'''
@@ -93,15 +85,21 @@ def pjoin(p):
 	sp = sorted([int(p[0]), int(p[1])])
 	return str(sp[0])+','+str(sp[1])
 
-@benchmark
-def loadEdgesCSVToRedis(ajlist_db, csv_filename):
-	ajlist_db.flushdb()
-	bdb = BufferedRedisDBSets(ajlist_db, MAX_BUFFER_SIZE)
-	with open(csv_filename) as f:
+def loadRedisDB(db, filename):
+	db.flushdb()
+	bdb = BufferedRedisDBSets(db, MAX_BUFFER_SIZE)
+	with open(filename) as f:
 		for line in f:
 			pair = line.strip().split(',')
 			bdb.sadd(pair[0], pair[1])
 	bdb.flush()
+
+@benchmark
+def loadGraphToRedis(ajlist_db, nodes_db, dataset_dir):
+    # load adjacency lists
+    loadRedisDB(ajlist_db, os.path.join(dataset_dir,'edges.csv'))
+    # load nodes (ugly patch to keep all the nodes)
+    loadRedisDB(nodes_db, os.path.join(dataset_dir,'nodes.csv'))
 
 def printDictByVal(d, lim=None):
   	'''
@@ -442,13 +440,13 @@ def x_Katz(redis_interface, x, limit, max_depth, beta, output=False):
 			d[y] += (beta**l)*(paths[l].get(y, 0))
 	if output: printDictByVal(d, limit)
 
-def x_RootedPageRank(redis_interface, x, limit, output=False):
+def x_RootedPageRank(redis_interface, x, limit, nodes_db, output=False):
 	rpr_lua = '''
 		local d = 0.85;
-		local limit = tonumber(ARGV[1])
+		local limit = tonumber(ARGV[1]);
 		local rpr = {};
 		local nrpr = {};
-		local N = redis.call('dbsize');
+		local N = tonumber(ARGV[2]);
 		local x = tostring(KEYS[1]);
 		local ttop = {};
 		local pttop = {0};
@@ -500,9 +498,9 @@ def x_RootedPageRank(redis_interface, x, limit, output=False):
 		  table.insert(tret, ttop[i]..','..tostring(nrpr[ttop[i]]));
 		end;
 		return tret;
-	'''
+	''' 
 	RPR_SCRIPT = redis_interface.register_script(rpr_lua)
-	for val in RPR_SCRIPT(keys=[x], args=[limit]):
+	for val in RPR_SCRIPT(keys=[x], args=[limit,nodes_db.dbsize()]):
 		fields = val.split(',')
 		if output and len(fields)==2: 
 			print('%s\t%s' % tuple(fields))
@@ -514,15 +512,15 @@ def parseArgs():
 			help='Redis server hostname')
 	parser.add_argument('-p', dest='port', default=6379, type=int,
 			help='Redis server port')
-	parser.add_argument('-f', dest='filename', default=None, 
-			help='Edges CSV file to load')
+	parser.add_argument('-d', dest='dataset', default=None, required=True,
+			help='Dataset to load')
 	parser.add_argument('--verbose', '-v', action='count')
 	args = parser.parse_args()
 	if args.verbose > 0:
 		global DEBUG
 		DEBUG = True
-	if not args.filename:
-		dprint("you did not supply an edges file...")
+	if not args.dataset:
+		dprint("you did not supply a dataset...")
 	return args
 
 def timer(t = None):
@@ -532,6 +530,7 @@ def timer(t = None):
 		return (time.time() - t)
 
 def benchmarkFunctionLoop(func, count, desc, randfunc, kwargs):
+	#TODO: switch random key selection (the selected node might not have an adjacency-list!)
 	dprint(desc)
 	timing_arr = []
 	total = timer()
@@ -549,10 +548,10 @@ def main():
 	ret = {}
 
 	rajl = redis.StrictRedis(host=args.hostname, port=args.port, db=0)
+	rnodes = redis.StrictRedis(host=args.hostname, port=args.port, db=1)
 	rcache = redis.StrictRedis(host=args.hostname, port=args.port, db=2)
-
-	if args.filename: 
-		loadEdgesCSVToRedis(rajl, args.filename)
+	
+	loadGraphToRedis(rajl, rnodes, args.dataset)
 
 	ret["cTopNIndex"] = generateTopNIndex(rajl, rcache, 101)
 	ret["bCommonNeighbors"] = b_Common_Neighbors(rajl, 100)
@@ -580,7 +579,7 @@ def main():
 			rajl.randomkey, {'redis_interface': rajl, 'limit': 100, 'beta': 0.1, 'max_depth': 3})
 	ret["xRootedPageRank"] = benchmarkFunctionLoop(x_RootedPageRank, 
 			10, "RootedPageRank for node", 
-			rajl.randomkey, {'redis_interface': rajl, 'limit': 100})
+            rajl.randomkey, {'redis_interface': rajl, 'limit': 100, 'nodes_db': rnodes})
 
 	print(json.dumps(ret))
 
