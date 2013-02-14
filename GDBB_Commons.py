@@ -19,18 +19,24 @@ class benchmark(object):
 			print("DEBUG: time elapsed: %g" % t)
 			return ret
 
-# Return a list of random node ids from a given file 
+__getRandomNodesCache=None
 def getRandomNodes(dataset, filename='rand_nodes.csv', count=1000):
-    ret = []
-    lineCounter = 0
-    try:
-        with open(os.path.join(dataset, filename)) as f:
-            for line in f:
-                pair = line.split(',')
-                if len(pair) == 2:
-                    ret.append(pair[0])
-                if len(ret) >= count:
-                    break
-    except:
-        sys.stderr.write('unable to read random nodes file (%s)' % os.path.join(dataset, filename))
-    return ret
+	''' Return a list of random node ids from a given file 
+		using a cache to allow efficiency over multiple calls 
+	'''
+	if __getRandomNodesCache is not None and len(__getRandomNodesCache)<=count:
+		return __getRandomNodesCache[0:count]
+	ret = []
+	lineCounter = 0
+	try:
+		with open(os.path.join(dataset, filename)) as f:
+			for line in f:
+				pair = line.split(',')
+				if len(pair) == 2:
+					ret.append(pair[0])
+				if len(ret) >= count:
+					break
+	except:
+		sys.stderr.write('unable to read random nodes file (%s)' % os.path.join(dataset, filename))
+	__getRandomNodesCache=ret[:] # clone to cache
+	return ret
