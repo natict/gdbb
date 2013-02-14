@@ -48,13 +48,13 @@ cd gdbb
 * Execute MySQL benchmark:
 
 ```
-./benchmark_mysql.py
+./benchmark_mysql.py all_core3
 ```
 
 * Execute Redis benchmark (i.e. for all_core3):
 
 ```
-./benchmark_redis.py -v -f all_core3/edges.csv
+./benchmark_redis.py -d all_core3
 ```
 
 * Create Neo4J graphs (you'll need to be a sudo-er) (i.e. for all_core3):
@@ -99,5 +99,3 @@ wrapper.java.initmemory=1024
 # Maximum Java Heap Size (in MB)
 wrapper.java.maxmemory=16384
 ```
-
-* RootedPageRank in Redis results are different from the other DBs, because there are no 0-neighbors nodes (no empty sets allowed), making the initial 1/N a bit smaller
