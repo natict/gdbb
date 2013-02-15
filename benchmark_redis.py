@@ -529,14 +529,14 @@ def timer(t = None):
 	else:
 		return (time.time() - t)
 
-def benchmarkFunctionLoop(func, count, desc, randfunc, kwargs):
+def benchmarkFunctionLoop(func, count, dataset, kwargs):
 	#TODO: switch random key selection (the selected node might not have an adjacency-list!)
-	dprint(desc)
+	random_nodes = getRandomNodes(dataset, count=count)
 	timing_arr = []
 	total = timer()
-	for i in xrange(count):
+	for n in random_nodes:
 		t = timer()
-		func(x=randfunc(), **kwargs)
+		func(x=n, **kwargs)
 		timing_arr.append(timer(t))
 	timing_arr.sort()
 	if count > 2:
@@ -560,26 +560,19 @@ def main():
 	ret["bPreferentialAttachment"] = b_Preferential_Attachment(rcache, 100)
 	
 	ret["xCommonNeighbors"] = benchmarkFunctionLoop(x_Common_Neighbors, 
-			1000, "Common Neighbors for node", 
-			rajl.randomkey, {'redis_interface': rajl, 'limit': 100})
+			1000, args.dataset, {'redis_interface': rajl, 'limit': 100})
 	ret["xJaccardsCoefficient"] = benchmarkFunctionLoop(x_Jaccards_Coefficient, 
-			1000, "Jaccard's Coefficient for node", 
-			rajl.randomkey, {'redis_interface': rajl, 'limit': 100})
+			1000, args.dataset, {'redis_interface': rajl, 'limit': 100})
 	ret["xAdamicAdar"] = benchmarkFunctionLoop(x_Adamic_Adar, 
-			1000, "Adamic/Adar for node", 
-			rajl.randomkey, {'redis_interface': rajl, 'limit': 100})
+			1000, args.dataset, {'redis_interface': rajl, 'limit': 100})
 	ret["xPreferentialAttachment"] = benchmarkFunctionLoop(x_Preferential_Attachment, 
-			1000, "Preferential Attachment for node", 
-			rajl.randomkey, {'redis_interface': rajl, 'limit': 100, 'cache_db': rcache})
+			1000, args.dataset, {'redis_interface': rajl, 'limit': 100, 'cache_db': rcache})
 	ret["xGraphDistance"] = benchmarkFunctionLoop(x_Graph_Distance, 
-			1000, "Graph Distance for node", 
-			rajl.randomkey, {'redis_interface': rajl, 'limit': 100})
+			1000, args.dataset, {'redis_interface': rajl, 'limit': 100})
 	ret["xKatz"] = benchmarkFunctionLoop(x_Katz_Lua, 
-			100, "Katz (unweighted) for node", 
-			rajl.randomkey, {'redis_interface': rajl, 'limit': 100, 'beta': 0.1, 'max_depth': 3})
+			100, args.dataset, {'redis_interface': rajl, 'limit': 100, 'beta': 0.1, 'max_depth': 3})
 	ret["xRootedPageRank"] = benchmarkFunctionLoop(x_RootedPageRank, 
-			10, "RootedPageRank for node", 
-            rajl.randomkey, {'redis_interface': rajl, 'limit': 100, 'nodes_db': rnodes})
+			10, args.dataset, {'redis_interface': rajl, 'limit': 100, 'nodes_db': rnodes})
 
 	print(json.dumps(ret))
 
