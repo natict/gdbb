@@ -24,7 +24,8 @@ def getRandomNodes(dataset, filename='rand_nodes.csv', count=1000):
 	''' Return a list of random node ids from a given file 
 		using a cache to allow efficiency over multiple calls 
 	'''
-	if __getRandomNodesCache is not None and len(__getRandomNodesCache)<=count:
+	global __getRandomNodesCache
+	if __getRandomNodesCache is not None and len(__getRandomNodesCache)>=count:
 		return __getRandomNodesCache[0:count]
 	ret = []
 	lineCounter = 0
