@@ -45,7 +45,7 @@ for i in $(seq 0 $((${#SNAP_GRAPH_NAMES[@]}-1))); do
 		rm ${SNAP_GRAPH_NAMES[$i]}.${SNAP_GRAPH_OPTS[$i]}
 		rm -rf $tmpdir
 	fi
-	for i in $(seq 0 $(cat edges.csv | tr ',' '\n' | sort -n | uniq | tail -n1)); do echo $i,Node $i >> nodes.csv; done
+	(for i in $(seq 0 $(cat edges.csv | tr ',' '\n' | sort -n | uniq | tail -n1)); do echo $i,Node $i; done) > nodes.csv
 	popd
 done
 
