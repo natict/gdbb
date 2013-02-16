@@ -491,8 +491,8 @@ def x_RootedPageRank(redis_interface, x, limit, nodes_db, output=False):
 					end;
 				end;
 			end;
+			table.sort(ttop, function (a,b) return nrpr[a]>nrpr[b]; end);
 		end;
-		table.sort(ttop, function (a,b) return nrpr[a]>nrpr[b]; end);
 		local tret = {};
 		for i = 1,#ttop,1 do
 		  table.insert(tret, ttop[i]..','..tostring(nrpr[ttop[i]]));
