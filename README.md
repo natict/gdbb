@@ -60,13 +60,18 @@ cd gdbb
 * Create Neo4J graphs (you'll need to be a sudo-er) (i.e. for all_core3):
 
 ```
-./init-neo4j.sh all_core3/
+./init-neo4j.sh all_core3
 ```
 
 * Execute Neo4J benchmark:
 
 ```
-./benchmark_neo4j.py
+./benchmark_neo4j.py all_core3
+```
+
+* Execute all benchmarks (assuming sudo permissions):
+```
+./benchmark-all.sh [MySQL_root_password]
 ```
 
 Notes

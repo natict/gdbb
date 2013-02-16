@@ -11,7 +11,7 @@ sleep 1
 for s in ${ALL_GRAPH_NAMES[@]}; do
 	echo "$s"
 	./init-mysql.sh $s $1
-	./benchmark_mysql.py > $s/mysql.json
+	./benchmark_mysql.py $s > $s/mysql.json
 	sleep 1
 done
 sudo /etc/init.d/mysql stop
@@ -23,7 +23,7 @@ sudo redis-server /etc/redis/redis.conf
 sleep 1
 for s in ${ALL_GRAPH_NAMES[@]}; do
 	echo "$s"
-	./benchmark_redis.py -f $s/edges.csv > $s/redis.json
+	./benchmark_redis.py -d $s > $s/redis.json
 	sleep 1
 done
 redis-cli shutdown
@@ -35,7 +35,7 @@ for s in ${ALL_GRAPH_NAMES[@]}; do
 	echo "$s"
 	./init-neo4j.sh $s
 	sleep 1
-	./benchmark_neo4j.py > $s/neo4j.json
+	./benchmark_neo4j.py $s > $s/neo4j.json
 	sleep 1
 done
 sudo /etc/init.d/neo4j-service stop
