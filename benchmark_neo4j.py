@@ -3,10 +3,11 @@
 from __future__ import print_function
 from random import randint
 from py2neo import neo4j, rest, cypher
-from GDBB_Commons import benchmark
+from GDBB_Commons import *
 
 import json
 import time
+import sys
 
 pInitNeighbors = """
 	START a=node(*)
@@ -95,6 +96,8 @@ xGraphDistance = """
 	LIMIT %d
 """
 
+pGraphNIDtoNeoNodeID = 'start n=node(*) where has(n.nid) and n.nid = %s return n'
+
 pGetNID = "start a=node({n}) return a.nid"
 xRootedPageRankInit = "start n=node(*) where has(n.nid) set n.rpr = %0.16f"
 xRootedPageRankSetSource = "start x=node({n}) match (x)-[:COAUTH]->(y) with (1-%f)+%f*sum(y.rpr/y.neighbors) as nrpr,x set x.nrpr=nrpr"
@@ -123,16 +126,36 @@ def generateTopNIndex(graph_db):
 def benchmarkCypher(graph_db, query, params):
 	cypher.execute(graph_db, query, params, error_handler=print)
 
-def randomLoopBenchmark(graph_db, query, node_count, loop_count):
+__getNeo4JRandomNodes = None
+def getNeo4JRandomNodes(graph_db, dataset, count):
+	''' Using GDBB_Commons.getRandomNodes and translating node ID to Neo4J's id
+	'''
+	global __getNeo4JRandomNodes
+	if __getNeo4JRandomNodes is not None and len(__getNeo4JRandomNodes)>=count:
+		return __getNeo4JRandomNodes[0:count]
+	__getNeo4JRandomNodes = []
+	nid_random_nodes = getRandomNodes(dataset, count=count)
+	for n in nid_random_nodes:
+		ret, meta = cypher.execute(graph_db, pGraphNIDtoNeoNodeID%n)
+		if type(ret) is list and len(ret) == 1:
+			if type(ret[0]) is list and len(ret[0]) == 1:
+				__getNeo4JRandomNodes.append(ret[0][0].id)
+	if len(nid_random_nodes) != len(__getNeo4JRandomNodes):
+		sys.stderr.write('unable to match all random nodes in Neo4J')
+	return __getNeo4JRandomNodes[:]
+
+
+def randomLoopBenchmark(graph_db, query, dataset, loop_count):
 	if loop_count == 0: 
 		return
+	random_nodes = getNeo4JRandomNodes(graph_db, dataset, loop_count)
 	l = []
 	t = time.time()
-	for i in xrange(loop_count):
+	for n in random_nodes:
 		if callable(query):
-			l.append(query(graph_db,{'n': randint(1,node_count-1)}))
+			l.append(query(graph_db,{'n': n}))
 		else:
-			l.append(benchmarkCypher(graph_db, query, {'n': randint(1,node_count-1)}))
+			l.append(benchmarkCypher(graph_db, query, {'n': n}))
 	t = time.time()-t
 	l.sort()
 	return {'min':l[0], 'median':l[len(l)/2], 'max':l[-1], 'total':t, 'count':loop_count}	# min, median, max, total
@@ -184,6 +207,9 @@ def tRootedPageRank(graph_db, params):
 		cret = [nid for nid,score in ret]
 
 def main():
+	if len(sys.argv) != 2:
+		print("you must specify dataset")
+	dataset = sys.argv[1]
 	graph_db = neo4j.GraphDatabaseService("http://localhost:7474/db/data/")
 	node_count = getNodeCount(graph_db)
 	ret = {}
@@ -191,12 +217,12 @@ def main():
 	ret["cTopNIndex"] = generateTopNIndex(graph_db)
 	ret["bCommonNeighbors"] = tCommonNeighbors(graph_db)
 	ret["bPreferentialAttachment"] = benchmarkCypher(graph_db, bPreferentialAttachment, {})
-	ret["xCommonNeighbors"] =  randomLoopBenchmark(graph_db, xCommonNeighbors, node_count, 1000)
-	ret["xJaccardsCoefficient"] =  randomLoopBenchmark(graph_db, xJaccardsCoefficient, node_count, 1000)
-	ret["xGraphDistance"] =  randomLoopBenchmark(graph_db, tGraphDistance, node_count, 1000)
-	ret["xPreferentialAttachment"] =  randomLoopBenchmark(graph_db, xPreferentialAttachment, node_count, 1000)
-	ret["xKatz"] =  randomLoopBenchmark(graph_db, tKatz, node_count, 100)
-	ret["xRootedPageRank"] =  randomLoopBenchmark(graph_db, tRootedPageRank, node_count, 10)
+	ret["xCommonNeighbors"] =  randomLoopBenchmark(graph_db, xCommonNeighbors, dataset, 1000)
+	ret["xJaccardsCoefficient"] =  randomLoopBenchmark(graph_db, xJaccardsCoefficient, dataset, 1000)
+	ret["xGraphDistance"] =  randomLoopBenchmark(graph_db, tGraphDistance, dataset, 1000)
+	ret["xPreferentialAttachment"] =  randomLoopBenchmark(graph_db, xPreferentialAttachment, dataset, 1000)
+	ret["xKatz"] =  randomLoopBenchmark(graph_db, tKatz, dataset, 100)
+	ret["xRootedPageRank"] =  randomLoopBenchmark(graph_db, tRootedPageRank, dataset, 10)
 	print(json.dumps(ret))
 
 if __name__ == "__main__":
