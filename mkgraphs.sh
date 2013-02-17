@@ -36,16 +36,17 @@ for i in $(seq 0 $((${#SNAP_GRAPH_NAMES[@]}-1))); do
 	wget $SNAP_BASE_URL/${SNAP_GRAPH_NAMES[$i]}.${SNAP_GRAPH_OPTS[$i]}
 	if [ ${SNAP_GRAPH_OPTS[$i]} == "txt.gz" ]; then
 		gunzip ${SNAP_GRAPH_NAMES[$i]}.${SNAP_GRAPH_OPTS[$i]}
-		grep -v ^# ${SNAP_GRAPH_NAMES[$i]}.txt | tr -d '\r' | awk '{print $1","$2}' > edges.csv
+		grep -v ^# ${SNAP_GRAPH_NAMES[$i]}.txt | tr -d '\r' | awk '{if ($1 != $2) {print $1","$2}}' > edges.csv
 		rm ${SNAP_GRAPH_NAMES[$i]}.txt
+		(for i in $(awk -F, '{print $1;print$2}' edges.csv | sort -n -u); do echo $i,Node $i; done) > nodes.csv
 	elif [ ${SNAP_GRAPH_OPTS[$i]} == "tar.gz" ]; then
 		tmpdir=$(mktemp -d ./tmpXXXXXX)
 		tar -xzf ${SNAP_GRAPH_NAMES[$i]}.${SNAP_GRAPH_OPTS[$i]} -C $tmpdir
-		cat $tmpdir/${SNAP_GRAPH_NAMES[$i]}/*.edges | awk '{print $1","$2}' > edges.csv
+		cat $tmpdir/${SNAP_GRAPH_NAMES[$i]}/*.edges | awk '{if ($1 != $2) {print $1","$2}}' > edges.csv
 		rm ${SNAP_GRAPH_NAMES[$i]}.${SNAP_GRAPH_OPTS[$i]}
 		rm -rf $tmpdir
+		(for i in $(seq 0 $(awk -F, '{print $1;print$2}' edges.csv | sort -n -u | tail -n1)); do echo $i,Node $i; done) > nodes.csv
 	fi
-	(for i in $(seq 0 $(cat edges.csv | tr ',' '\n' | sort -n | uniq | tail -n1)); do echo $i,Node $i; done) > nodes.csv
 	popd
 done
 
