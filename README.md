@@ -70,6 +70,7 @@ cd gdbb
 ```
 
 * Execute all benchmarks (assuming sudo permissions):
+
 ```
 ./benchmark-all.sh [MySQL_root_password]
 ```
