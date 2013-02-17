@@ -1,0 +1,99 @@
+\section{Introduction}
+The best paper in the world is~\cite{Liben-Nowell:2003:LPP:956863.956972}.
+
+\input link-prediction
+
+\section{Implementation}
+The selected algorithms were implemented and tested over three different 
+database systems: Relational, Key-Value store and Graph. 
+In each system we attempted to implement the algorithms as natively as possible, 
+using that system's features and applying common optimizations. 
+
+For the bechmarking we chose MySQL, Redis and Neo4J.
+These databases are all open-source, enabling us to publish these benchmarks,
+and popular in their domain, therefore considered as a viable option for such social network implementation.
+
+\subsection{MySQL}
+MySQL is a popular multi-platform, open-source relational database management
+system, sponsored by Oracle. It can be used in client-server or embedded
+architecture and it's main features include: 
+\begin{itemize}
+	\item {\bf Pluggable storage-engines:} MySQL supports several storage engines, 
+		most notables are MyISM (fast, simple, no ACID support, no foreign keys) and
+		InnoDB (default, supports transactions, ACID and foreign keys).
+	\item {\bf Stored Procedures} Like most other relational databases MySQL supports 
+		stored procedures execution. Advantages of this feature include 
+		avoidance of network traffic for the SQL queries and intermediate results,
+		and encapsulation of a multi-query logic in one place.
+	\item {\bf Fast Bulk Data Loading} MySQL support very fast data loading from file,
+		with it's 'LOAD DATA' statement. From all the systems we tested, this offered 
+		the easiest and fastest to load our graph.
+\end{itemize}
+
+In this case, the algorithms were implemented as a SQL stored-procedures only,
+using indices and intermediate tables when possible. A Python script was used
+to run these stored-procedures and collect the benchmarks. For a storage-engine 
+we chose InnoDB, the default engine in MySQL 5.5, as it out-performs MyISM in 
+most senarios. \footnote{Sara: can we cite Oracle white papers? http://www.oracle.com/partners/en/knowledge-zone/mysql-5-5-innodb-myisam-522945.pdf}
+
+\subsection{Redis}
+Redis is an open-source, in-memory key-value store database system, sponsored
+by VMware. It's main features are atomic operations, data structure as value
+(hash, list, set and sorted-set), optional persistence, pub/sub mechanism,
+built-in Lua interpreter and master-slave replication. 
+
+Here, some of the algorithms were implemented in Python using redis API, and
+some were implemented as Lua scripts (to minimize Redis API calls). When an
+index was needed, we simply used another Redis DB (you get 16 with the default
+configuration). 
+The graphs were represented using adjacency lists, i.e. a key is a node-id and
+it's value is a set of his neighbors. That implementation posed a limitation,
+since we couldn't store nodes without neighbors, as redis doesn't allow to
+store empty sets. \#TODO: why doesn't it matter in our case 
+
+\subsection{Neo4J}
+Neo4J is a multi-platform, open-source, graph database supported by Neo
+Technology. It features full ACID transactions, expressive graph query
+language, indexing and high availability. It can operate in an embedded or
+client-server architecture. 
+
+In this database, we attempted to use only Neo4j's declarative query language
+(Cypher) to implement the algorithms, and the client-server architecture to run
+them with. The benchmarking was performed using the Python API, which also
+assisted in implementing some multi-query algorithms. We found that the best
+way to load the graph into Neo4J was to use the BatchInserter class in the
+embedded architecture, and copy the created files into the server. 
+
+There are some limitations to the Cypher language users should be aware of:
+\begin{itemize}
+\item There are not many built in functions (e.g. no Power, Log, or Rand
+  functions) 
+\item No support for user defined functions
+\item Queries are really slow when matching a non-trivial pattern over the whole
+graph (e.g. common neighbors)  
+\end{itemize}
+
+\section{Experiments}
+We benchmarked the above implementations using 10 undirected graphs:
+\begin{itemize}
+\item Three graphs were extracted from the DBLP XML records using the authors as
+nodes, and co-authorship relation as edges. Each graph was over a different
+time period, and  we only kept authors with 3 or more publication within the
+selected time period (core-3). 
+
+\item Seven graphs from the Stanford Network Analysis Project (SNAP) dataset
+  collection. No changes were made to these graphs.
+\end{itemize}
+
+Graphs to add:
+\begin{enumerate}
+\item Top N index generation (significantly faster on MySQL)
+\item Graph Distance (significantly faster on Redis)
+\item Jaccard Coefficient (faster on Neo4J)
+\end{enumerate}
+
+\section{Conclusions}
+The main conclusion we took from this experience is that there is no silver-bullet for storing and running algorithms over social-network graphs. Generally speaking, MySQL seems to have an edge with indices-based implementation, Redis seems to be extremely flexible and open to endless optimization, and Neo4J's Cypher is leading with implementation simplicity.
+If we were to build a social network database we'd consider holding replicas in server types of system. While this solution might not be disk-space efficient, it'll provide us the opportunity to achieve the fastest query time with minimal time investment.
+
+Please note that we didn't use any scale out features. A large network implementation can't pick a solution which doesn't have it. \#TODO

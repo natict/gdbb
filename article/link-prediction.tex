@@ -1,0 +1,89 @@
+\newcommand{\score}[1]{{\mathrm {#1}}}
+
+\section{Link Predicton}
+
+Link prediction in a classic and well-studied problem over social
+networks, e.g.~\cite{}. Formally, the {\em link prediction problem\/}
+is: Given a snapshot of a social network at a given point in time,
+predict which edges will be added to the network as it naturally
+evolves. The ability to predict such links is considered important for
+friend recommendation, i.e., as predicted links are likely to
+represent natural relationships in the network. Link prediction is
+also useful for inferring missing links, i.e., discovering which links
+are surprisingly missing (and then the social process leading to this
+formation can be further analyzed). 
+
+Many score functions have been developed for predicting links. In general, a
+a score function is defined over pairs of nodes, and indicates
+the likelihood of a link forming between these nodes. As of now, no
+clear winner for the link prediction problem has been found. Instead,
+different score functions have proven useful over varying datasets. As we will
+see later, score functions may differ substantionally in their ease of
+implementation and in their efficiency.
+
+Below we detail the score functions considered in this paper. These particular
+functions were chosen for two reasons. First, they are  the
+``bread-and-butter'' of link prediction, i.e., they are
+widely considered and studied. Second, their implementation requires a
+variety of types of accesses to the social network graph (only to
+neighbors, iterating over paths or random walks). Hence, they can
+perhaps shed light on how efficient other common graph operations
+would be over social networks (in different system implementations). 
+
+
+In total, we considered seven score functions for link prediction. In the
+following, we assume that $x$ and $y$ are nodes in a social
+network. We use $N(x)$ to denote the set of all neighbors of
+$x$. Finally, we
+use $P^l(x,y)$ to denote the set of all paths of length $l$ between $x$
+and $y$.
+\begin{itemize}
+\item {\bf Common neighbors:} The common neighbors $\score{cneigh}$
+  function measures the number of neighbors in common to $x$ and $y$,
+  i.e., \[ \score{cneigh}(x,y) = |N(x) \cap N(y)| \,.\]
+\item {\bf Jaccard coefficient:} The Jaccard coefficient is slightly
+  more sophisticated than common neighbors, as it also takes into
+  considering the total number of neighbors that $x$ and $y$
+  have. This is significant, since nodes with many neighbors are more
+  likely to have neighbors in common. Formally, the Jaccard
+  coefficient is defined as
+\[ \score{jacc}(x,y) = \frac{|N(x) \cap N(y)|}{|N(x) \cup N(y)|}\,.\]
+\item {\bf Adamic-Adar:} The Adamic-Adar measure~\cite{} considers
+  nodes to be related if they have common neighbors, but weights the
+  importance of a common neighbor $z$ proportionately to the number of
+  neighbors of $z$. This gives more weight to rarer common neighbors,
+  i.e., to nodes $z$ that have few neighbors themselves, as follows
+\[ \score{aa}(x,y) = \sum_{z\in N(x)\cap N(y)} \frac{1}{\log{|N(z)|}}\,.\]
+\item {\bf Preferential attachment:} In this score function, popular
+  nodes (i.e., those with many neighbors) are considered more likely
+  to form relationships one with another
+\[ \score{pref}(x,y) = |N(x)|\times |N(y)|\,.\]
+\item {\bf Graph distance:} Unlike all previous measures, that only
+  directly considered the neighbors of $x$ and $y$, graph distance
+  takes into consideration the relationship between nodes that may be
+  far away. Thus, this scoring function $\score{dist}(x,y)$ is simply the
+  the length of the shortest path between  $x$ and $y$. 
+\item {\bf Katz measure:} The Katz measure~\cite{} takes into
+  consideration all paths between $x$ and $y$, but these paths are
+  weighted by their length. In general, $\score{katz}$ is computed as
+\[ \score{katz}(x,y) = \sum_{l=1}^\infty \beta^l |P^l(x,y)|\,,\]
+where $0<\beta<1$. We used a $\beta$ value of 0.1. For efficiency
+purposes, we only summed until paths 
+of length 3.
+\item {\bf Rooted PageRank:} PageRank~\cite{} computes a general importance
+  value for a node by measuring the stationary distribution weight of
+  a node $x$ under a random walk, where with probability $\alpha$ one
+  jumps to a random node in the graph, while with probability
+  $1-\alpha$ one goes to a random neighbor of the current node. Rooted
+  PageRank adapts this measure to compute the importance of a node $y$
+  with relationship to a node $x$. Thus, $\score{rPR}(x,y)$ computes
+  the stationary distribution weight of   a node $y$ under a random
+  walk, where with probability $\alpha$ one jumps back to $x$, while
+  with probability $1-\alpha$, one proceeds as before (i.e., to a
+  random neighbor). In our implementation we chose $\alpha$ \footnote{Sara: rename alpha to d? (damping factor)} as
+  0.85 \footnote{Sara: for the damping factor value, should we cite? http://infolab.stanford.edu/pub/papers/google.pdf} 
+\end{itemize}
+Note that for all measures other than graph distance, a
+higher value for the scoring function indicates greater likelihood of
+link formation, while for graph distance, the opposite is
+true. 
