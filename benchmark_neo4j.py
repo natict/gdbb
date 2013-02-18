@@ -101,7 +101,7 @@ pGraphNIDtoNeoNodeID = 'start n=node(*) where has(n.nid) and n.nid = %s return n
 pGetNID = "start a=node({n}) return a.nid"
 xRootedPageRankInit = "start n=node(*) where has(n.nid) set n.rpr = %0.16f"
 xRootedPageRankSetSource = "start x=node({n}) match (x)-[:COAUTH]->(y) with (1-%f)+%f*sum(y.rpr/y.neighbors) as nrpr,x set x.nrpr=nrpr"
-xRootedPageRankSetOther = "start x=node(*) where has(x.nid) with x match (x)-[:COAUTH]->(y) where x.nid < y.nid and x.nid <> %d with %f*sum(y.rpr/y.neighbors) as nrpr,x set x.nrpr=nrpr"
+xRootedPageRankSetOther = "start x=node(*) where has(x.nid) with x match (x)-[:COAUTH]->(y) where x.nid <> %d with %f*sum(y.rpr/y.neighbors) as nrpr,x set x.nrpr=nrpr"
 xRootedPageRankSwitch = "start n=node(*) where has (n.nrpr) set n.rpr = n.nrpr"
 xRootedPageRankQueryTop = "start y=node(*) where has(y.rpr) and y.nid <> %d return y.nid, y.rpr order by y.rpr desc limit %d"
 
@@ -203,7 +203,7 @@ def tRootedPageRank(graph_db, params):
 		cypher.execute(graph_db, xRootedPageRankSetSource % (d,d), params)
 		cypher.execute(graph_db, xRootedPageRankSetOther %(xnid,d))
 		cypher.execute(graph_db, xRootedPageRankSwitch)
-		ret, meta = cypher.execute(graph_db, xRootedPageRankQueryTop % (xnid,100))
+		ret, meta = cypher.execute(graph_db, xRootedPageRankQueryTop % (xnid,10))
 		cret = [nid for nid,score in ret]
 
 def main():
@@ -222,7 +222,7 @@ def main():
 	ret["xGraphDistance"] =  randomLoopBenchmark(graph_db, tGraphDistance, dataset, 1000)
 	ret["xPreferentialAttachment"] =  randomLoopBenchmark(graph_db, xPreferentialAttachment, dataset, 1000)
 	ret["xKatz"] =  randomLoopBenchmark(graph_db, tKatz, dataset, 100)
-	ret["xRootedPageRank"] =  randomLoopBenchmark(graph_db, tRootedPageRank, dataset, 10)
+	ret["xRootedPageRank"] =  randomLoopBenchmark(graph_db, tRootedPageRank, dataset, 100)
 	print(json.dumps(ret))
 
 if __name__ == "__main__":

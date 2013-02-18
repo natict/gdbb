@@ -572,7 +572,7 @@ def main():
 	ret["xKatz"] = benchmarkFunctionLoop(x_Katz_Lua, 
 			100, args.dataset, {'redis_interface': rajl, 'limit': 100, 'beta': 0.1, 'max_depth': 3})
 	ret["xRootedPageRank"] = benchmarkFunctionLoop(x_RootedPageRank, 
-			10, args.dataset, {'redis_interface': rajl, 'limit': 100, 'nodes_db': rnodes})
+			100, args.dataset, {'redis_interface': rajl, 'limit': 10, 'nodes_db': rnodes})
 
 	print(json.dumps(ret))
 

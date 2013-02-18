@@ -47,7 +47,7 @@ def main():
 	ret["xPreferentialAttachment"] = randomLoopBenchmark(db, "x_Preferential_attachment", 1000)
 	ret["xGraphDistance"] = randomLoopBenchmark(db, "x_Graph_Distance", 1000, [4,100])
 	ret["xKatz"] = randomLoopBenchmark(db, "x_Katz", 100, [3,0.1,100])
-	ret["xRootedPageRank"] = randomLoopBenchmark(db, "x_RootedPageRank", 10)
+	ret["xRootedPageRank"] = randomLoopBenchmark(db, "x_RootedPageRank", 100)
 
 	print(json.dumps(ret))
 
