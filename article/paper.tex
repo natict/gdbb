@@ -34,7 +34,29 @@ In this case, the algorithms were implemented as a SQL stored-procedures only,
 using indices and intermediate tables when possible. A Python script was used
 to run these stored-procedures and collect the benchmarks. For a storage-engine 
 we chose InnoDB, the default engine in MySQL 5.5, as it out-performs MyISM in 
-most senarios. \footnote{Sara: can we cite Oracle white papers? http://www.oracle.com/partners/en/knowledge-zone/mysql-5-5-innodb-myisam-522945.pdf}
+most senarios. \footnote{Sara: can we cite Oracle white papers? 
+http://www.oracle.com/partners/en/knowledge-zone/mysql-5-5-innodb-myisam-522945.pdf}
+\linebreak
+Implementation details:
+\begin{itemize}
+	\item {\bf Helper Tables} We generated the following helper tables 
+		to speed up some algorithms:
+		\begin{itemize}
+			\item {common-neighbors (id1, id2, neighbor)}
+			\item {common-neighbors-count (id1, id2, number of common neighbors)}
+			\item {neighbors (id, number of neighbors)}
+			\item {topN (id, number of neighbors)}
+				This table is simply the top 101 items of the neighbors table.
+		\end{itemize}
+	\item {\bf Common Neighbors (global)} 
+		To find the top N records with most common neighbors, 
+		we selected them from the common-neighbors-count table.
+	\item {\bf Jaccard's Coefficient (global)} 
+		We used the following relation between the cardinality of union and intersection:
+		\[{|N(x) \cup N(y)|} = {|N(x)| + |N(y)| - |N(x) \cap N(y)|}\]
+		So to calculate the score we used the common-neighbors-count and the neighbors helper tables.
+	\item {\bf Adamic/Adar (global)} 
+\end{itemize}
 
 \subsection{Redis}
 Redis is an open-source, in-memory key-value store database system, sponsored
