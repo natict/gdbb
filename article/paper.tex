@@ -56,6 +56,28 @@ Implementation details:
 		\[{|N(x) \cup N(y)|} = {|N(x)| + |N(y)| - |N(x) \cap N(y)|}\]
 		So to calculate the score we used the common-neighbors-count and the neighbors helper tables.
 	\item {\bf Adamic/Adar (global)} 
+		We used the common-neighbors joined with the neighbors helper table.
+	\item {\bf Preferential attachment (Global)}
+		We used only the topN helper table, because the highest products 
+		must be combinations of the nodes with most neighbors.
+	\item {\bf Common Neighbors (for node)}
+		We used a simple join on the edges table, no helper tables required.
+	\item {\bf Jaccard's Coefficient (for node)}
+		We used the relation between the cardinality of union and intersection,
+		with join of two edges tables, and two neighbors helper tables.
+	\item {\bf Adamic/Adar (for node)}
+		We used join on the edges table, with the neighbors helper table.
+	\item {\bf Preferential attachment (for node)}
+		We used the topN helper table, just like in the global version.
+	\item {\bf Graph Distance (for node)}
+		We used a recursive procedure, starting with a temporary table with all the node's neighbors,
+		and on each iteration N we added all the neighbors of nodes in depth N-1. This implementation
+		required us to reconfigure MySQL maximum recursion depth.
+	\item {\bf Katz (for node)}
+		We used a recursive procedure to calculate $|P^l(x,y)|$ for all reachable nodes in depth 3,
+		and stored that in a temporary table. We then used that to calculate the score.
+	\item {\bf Rooted PageRank (for node)}
+
 \end{itemize}
 
 \subsection{Redis}
