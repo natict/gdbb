@@ -27,16 +27,17 @@ architecture and it's main features include:
 		and encapsulation of a multi-query logic in one place.
 	\item {\bf Fast Bulk Data Loading} MySQL support very fast data loading from file,
 		with it's 'LOAD DATA' statement. From all the systems we tested, this offered 
-		the easiest and fastest to load our graph.
+		the easiest and fastest way to load our graph.
 \end{itemize}
 
-In this case, the algorithms were implemented as a SQL stored-procedures only,
+In this case, the algorithms were implemented as a SQL stored-procedures,
 using indices and intermediate tables when possible. A Python script was used
 to run these stored-procedures and collect the benchmarks. For a storage-engine 
 we chose InnoDB, the default engine in MySQL 5.5, as it out-performs MyISM in 
 most senarios. \footnote{Sara: can we cite Oracle white papers? 
 http://www.oracle.com/partners/en/knowledge-zone/mysql-5-5-innodb-myisam-522945.pdf}
 \linebreak
+
 Implementation details:
 \begin{itemize}
 	\item {\bf Helper Tables} 
@@ -101,7 +102,9 @@ by VMware. It's written in C and has atomic operations, we used the following fe
 	\item {\bf Lua Scripting}
         Lua scripting enable you to run your own code, in an atomic matter inside the server.
         Unlike transactions, you can add non-Redis logic to this atomic operation. We used 
-        Lua scripting to speed-up and algorithem which took long time to run.\footnote{Sara: we are kind of abusing this feature, by locking the db and assuming single client, should we mention that?}
+        Lua scripting to speed-up and algorithem which took long time to run. \footnote{Sara: 
+        we are kind of abusing this feature, by locking the db and assuming single client, 
+        should we mention that?}
 \end{itemize}
 
 Here, some of the algorithms were implemented in Python using redis API, and
@@ -109,34 +112,82 @@ some were implemented as Lua scripts (to minimize Redis API calls). When an
 index was needed, we simply used another Redis DB (you get 16 with the default
 configuration). 
 The graphs were represented using adjacency lists, i.e. a key is a node-id and
-it's value is a set of his neighbors. That implementation posed a limitation,
-since we couldn't store nodes without neighbors, as redis doesn't allow to
-store empty sets. This isn't such an issue for us, as all the algorithems we tested
-return an empty set for such nodes, and we still kept a nodes db <id, name> which
-could provide us with the node count (i.e. needed for the Rooted PageRank implementation)
+it's value is a set of his neighbors. We also kept a nodes database <id, name>, 
+basicall just to get a node count (i.e. needed for the Rooted PageRank implementation),
+because redis can't hold empty sets.
 \linebreak
+
 Implementation details:
 \begin{itemize}
 	\item {\bf Helper Database} 
         We only generated one database speed up the Preferential attachment algorithm:
 	    topN (id, number of neighbors), a database which holds 101 nodes with most neighbors.
 	\item {\bf Common Neighbors (global)} 
-        We implemented this algorithm using the Lua scripting feature. TODO
-	\item {\bf Jaccard's Coefficient (global)} 
+        We implemented this algorithm using the Lua scripting feature. First we accumulate 
+        the number of common neighbors for each node pair, then iterated over the results 
+        to keep the top scoring, and return a sorted result.
+	\item {\bf Jaccard's Coefficient (global)}
+        Using Lua scripting we used the first part of the Common Neighbors implementation,
+        and the relation between the cardinality of union and intersection, and that redis
+        can give us the cardinality of a set in a single operation (i.e. number of neighbors)
+        we calculated the score and continued similarly to the above implementation.
 	\item {\bf Adamic/Adar (global)} 
+        Using the Lua scripting, we accumulated list of common neighbors for each pair,
+        then went over that list and calculated the algorithm, keeping only the top scoring pairs.
 	\item {\bf Preferential attachment (Global)}
+        We used the helper database that we created beforehand, to find pairs with maximal product.
 	\item {\bf Common Neighbors (for node)}
+        We used the same logic as with the global implementation, but with the Python API,
+        as it was fast enough.
 	\item {\bf Jaccard's Coefficient (for node)}
+        We used the same logic as with the global implementation, but with the Python API,
+        as it was fast enough.
 	\item {\bf Adamic/Adar (for node)}
+        We used the same logic as with the global implementation, but with the Python API,
+        as it was fast enough.
 	\item {\bf Preferential attachment (for node)}
+        We used the same logic as with the global implementation.
 	\item {\bf Graph Distance (for node)}
+        Using the Python API and an iterative loop, we started with the source node 
+        as depth 0, on each iteration we expended all the nodes from the previous depth.
 	\item {\bf Katz (for node)}
+        Using Lua, we started by calculating the $|P^l(x,y)|$ for all reachable nodes in depth 3,
+        and then used that to calculate the score.
 	\item {\bf Rooted PageRank (for node)}
+        Using Lua, we used an iterative loop over a temporary table <id, rpr, new-rpr>, initiated with all the 
+        nodes in the graph, and 1/N value where N is the number of nodes in the graph. On every 
+        iteration we updated the new-rpr value, using the formula above. We stopped when the algorithm
+        converged on the top-10 scoring nodes and their order.
 \end{itemize}
 
 \subsection{Neo4J}
 Neo4J is a multi-platform, open-source, graph database supported by Neo
-Technology. It features full ACID transactions, expressive graph query
+Technology. Some of it's main features are:
+\begin{itemize}
+    \item {\bf transactions}
+        Neo4J supports ACID transactions, similar to RDBMS. This also enables 
+        you to send chunk of commands to the database instead of single 
+        instactions and avoid network latency for each call. We tried to use
+        this to load our graph, but this method is just too slow for bulk insertions.
+    \item {\bf Embedded mode}
+        Embedding Neo4J in your application, mainly saves time on REST calls 
+        and enables fast interaction with the database. We used that feature 
+        to load the graph, and the move the generated files to the server.
+        We found that currently, this is the fastest way to bulk insert a 
+        large graph to Neo4J.
+    \item {\bf Cypher query language}
+        Cypher is a declerative query language for graphs, enabling you to
+        match pattern, filter on properties and make changes. It's syntax is
+        much like SQL, e.g. friends of friends which are not directly connected:
+        \begin{verbatim}
+            START n=node(...)
+            MATCH n-->m-->o
+            WHERE not ( n-->o )
+            RETURN o
+        \end{verbatim}
+    \item {\bf Lucene Indexing}
+\end{itemize}
+ACID transactions, expressive graph query
 language, indexing and high availability. It can operate in an embedded or
 client-server architecture. 
 
