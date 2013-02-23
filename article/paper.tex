@@ -11,7 +11,8 @@ using that system's features and applying common optimizations.
 
 For the bechmarking we chose MySQL, Redis and Neo4J.
 These databases are all open-source, enabling us to publish these benchmarks,
-and popular in their domain, therefore considered as a viable option for such social network implementation.
+and popular in their domain, therefore considered as a viable option for 
+such social network implementation.
 
 \subsection{MySQL}
 MySQL is a popular multi-platform, open-source relational database management
@@ -55,7 +56,8 @@ Implementation details:
 	\item {\bf Jaccard's Coefficient (global)} 
 		We used the following relation between the cardinality of union and intersection:
 		\[{|N(x) \cup N(y)|} = {|N(x)| + |N(y)| - |N(x) \cap N(y)|}\]
-		So to calculate the score we used the common-neighbors-count and the neighbors helper tables.
+		So to calculate the score we used the common-neighbors-count and 
+		the neighbors helper tables.
 	\item {\bf Adamic/Adar (global)} 
 		We used the common-neighbors joined with the neighbors helper table.
 	\item {\bf Preferential attachment (Global)}
@@ -71,16 +73,19 @@ Implementation details:
 	\item {\bf Preferential attachment (for node)}
 		We used the topN helper table, just like in the global version.
 	\item {\bf Graph Distance (for node)}
-		We used a recursive procedure, starting with a temporary table with all the node's neighbors,
-		and on each iteration N we added all the neighbors of nodes in depth N-1. This implementation
-		required us to reconfigure MySQL maximum recursion depth.
+		We used a recursive procedure, starting with a temporary table with all 
+		the node's neighbors, and on each iteration N we added all the neighbors 
+		of nodes in depth N-1. This implementation required us to reconfigure 
+		MySQL maximum recursion depth.
 	\item {\bf Katz (for node)}
-		We used a recursive procedure to calculate $|P^l(x,y)|$ for all reachable nodes in depth 3,
-		and stored that in a temporary table. We then used that to calculate the score.
+		We used a recursive procedure to calculate $|P^l(x,y)|$ for all reachable 
+		nodes in depth 3, and stored that in a temporary table. We then used that 
+		to calculate the score.
 	\item {\bf Rooted PageRank (for node)}
-        We used an iterative loop over a temporary table <id, rpr, new-rpr>, initiated with all the 
-        nodes in the graph, and 1/N value where N is the number of nodes in the graph. On every 
-        iteration we updated the new-rpr value, using the formula above. We stopped when the algorithm
+        We used an iterative loop over a temporary table <id, rpr, new-rpr>, 
+		initiated with all the nodes in the graph, and 1/N value where N is the 
+		number of nodes in the graph. On every iteration we updated the 
+		new-rpr value, using the formula above. We stopped when the algorithm
         converged on the top-10 scoring nodes and their order.
 \end{itemize}
 
@@ -102,7 +107,7 @@ by VMware. It's written in C and has atomic operations, we used the following fe
 	\item {\bf Lua Scripting}
         Lua scripting enable you to run your own code, in an atomic matter inside the server.
         Unlike transactions, you can add non-Redis logic to this atomic operation. We used 
-        Lua scripting to speed-up and algorithem which took long time to run. \footnote{Sara: 
+        Lua scripting to speed-up and algorithm which took long time to run. \footnote{Sara: 
         we are kind of abusing this feature, by locking the db and assuming single client, 
         should we mention that?}
 \end{itemize}
@@ -135,46 +140,50 @@ Implementation details:
         Using the Lua scripting, we accumulated list of common neighbors for each pair,
         then went over that list and calculated the algorithm, keeping only the top scoring pairs.
 	\item {\bf Preferential attachment (Global)}
-        We used the helper database that we created beforehand, to find pairs with maximal product.
+        We used the helper database that we created beforehand, to find pairs 
+		with maximal product.
 	\item {\bf Common Neighbors (for node)}
-        We used the same logic as with the global implementation, but with the Python API,
-        as it was fast enough.
+        We used the same logic as with the global implementation, but with the 
+		Python API, as it was fast enough.
 	\item {\bf Jaccard's Coefficient (for node)}
-        We used the same logic as with the global implementation, but with the Python API,
-        as it was fast enough.
+        We used the same logic as with the global implementation, but with the 
+		Python API, as it was fast enough.
 	\item {\bf Adamic/Adar (for node)}
-        We used the same logic as with the global implementation, but with the Python API,
-        as it was fast enough.
+        We used the same logic as with the global implementation, but with the 
+		Python API, as it was fast enough.
 	\item {\bf Preferential attachment (for node)}
         We used the same logic as with the global implementation.
 	\item {\bf Graph Distance (for node)}
-        Using the Python API and an iterative loop, we started with the source node 
-        as depth 0, on each iteration we expended all the nodes from the previous depth.
+        Using the Python API and an iterative loop, we started with the source 
+		node as depth 0, on each iteration we expended all the nodes from the 
+		previous depth.
 	\item {\bf Katz (for node)}
-        Using Lua, we started by calculating the $|P^l(x,y)|$ for all reachable nodes in depth 3,
-        and then used that to calculate the score.
+        Using Lua, we started by calculating the $|P^l(x,y)|$ for all reachable 
+		nodes in depth 3, and then used that to calculate the score.
 	\item {\bf Rooted PageRank (for node)}
-        Using Lua, we used an iterative loop over a temporary table <id, rpr, new-rpr>, initiated with all the 
-        nodes in the graph, and 1/N value where N is the number of nodes in the graph. On every 
-        iteration we updated the new-rpr value, using the formula above. We stopped when the algorithm
-        converged on the top-10 scoring nodes and their order.
+        Using Lua, we used an iterative loop over a temporary 
+		table <id, rpr, new-rpr>, initiated with all the nodes in the graph, 
+		and 1/N value where N is the number of nodes in the graph. On every 
+        iteration we updated the new-rpr value, using the formula above. 
+		We stopped when the algorithm converged on the top-10 scoring nodes 
+		and their order.
 \end{itemize}
 
 \subsection{Neo4J}
 Neo4J is a multi-platform, open-source, graph database supported by Neo
 Technology. Some of it's main features are:
 \begin{itemize}
-    \item {\bf transactions}
+    \item {\bf Transactions}
         Neo4J supports ACID transactions, similar to RDBMS. This also enables 
         you to send chunk of commands to the database instead of single 
         instactions and avoid network latency for each call. We tried to use
         this to load our graph, but this method is just too slow for bulk insertions.
     \item {\bf Embedded mode}
-        Embedding Neo4J in your application, mainly saves time on REST calls 
+        Embedding Neo4J in your application mainly saves time on REST calls 
         and enables fast interaction with the database. We used that feature 
-        to load the graph, and the move the generated files to the server.
+        to load the graph, and then move the generated files to the server.
         We found that currently, this is the fastest way to bulk insert a 
-        large graph to Neo4J.
+        large graph into a Neo4J server.
     \item {\bf Cypher query language}
         Cypher is a declerative query language for graphs, enabling you to
         match pattern, filter on properties and make changes. It's syntax is
@@ -185,39 +194,129 @@ Technology. Some of it's main features are:
             WHERE not ( n-->o )
             RETURN o
         \end{verbatim}
-    \item {\bf Lucene Indexing}
+    \item {\bf Indexing}
+		There are two main indexing options in Neo4J:
+		\begin{enumerate}
+			\item {\bf Using the graph}
+				An index can be implemented as a layed over the graph, 
+				i.e. by adding more relations which represent the index
+				structure.
+			\item {\bf Separate index}
+				By default, Neo4J uses Apache Lucene as a backend index engine.
+				This enables you to index Nodes and Relations, and use all Lucene's
+				features, including fulltext index.
+				We used this form of indexing to speed-up the Preferential attachment
+				algorithm.
+		\end{enumerate}
 \end{itemize}
-ACID transactions, expressive graph query
-language, indexing and high availability. It can operate in an embedded or
-client-server architecture. 
 
-In this database, we attempted to use only Neo4j's declarative query language
-(Cypher) to implement the algorithms, and the client-server architecture to run
-them with. The benchmarking was performed using the Python API, which also
-assisted in implementing some multi-query algorithms. We found that the best
-way to load the graph into Neo4J was to use the BatchInserter class in the
-embedded architecture, and copy the created files into the server. 
-
-There are some limitations to the Cypher language users should be aware of:
+We attempted to implement all the algorithms using Cypher. Though this was 
+usually an easy task, some of the language current limitations prevented us 
+from achiving that goal:
 \begin{itemize}
-\item There are not many built in functions (e.g. no Power, Log, or Rand
-  functions) 
-\item No support for user defined functions
-\item Queries are really slow when matching a non-trivial pattern over the whole
-graph (e.g. common neighbors)  
+	\item Lack of major math functions (e.g. Power, Log, Rand), and no support 
+		for user defined function, prevented from implementing the Adamic/Adar 
+		algorithm or to use multiple queries, joined by logic in Python, 
+		to implement the Katz algorithm.
+	\item Performance issues on mutiple start nodes, in particular when matching
+		a non-trivial pattern over the whole graph (i.e. our global benchmarks).
+		We had to omit the global version of Jaccard Coefficient, and find another
+		approach to the global Common Neighbors implementation.
+\end{itemize}
+
+Implementation details:
+\begin{itemize}
+	\item {\bf Helper Neighbor count property}
+		Since Neo4J doen't provide a fast way to get the number of node's neighbors,
+		we added a neighbor count property to each node. This was useful for 
+		almost any algorithm we implemented.
+	\item {\bf Helper Index}
+		We generated an Lucene index containing 101 nodes with most neighbors,
+		to speed up the Preferential attachment algorithm.
+	\item {\bf Common Neighbors (global)} 
+		In order to circumvent a Cypher performance issue with multiple start 
+		nodes, we used a different approach to the Common Neighbors implementation:
+		we realized that the result-set of such query will only contain nodes with
+		at least $\alpha$ number of neighbors, where $\alpha$ is number of neighbors
+		of the lowers scoring pair in the result-set.
+		So we used a binary search method to find that $\alpha$, by iteratively 
+		running the	query over nodes with $\beta$ number of neighbors, where $\beta$
+		is initiated to $M/2$ ($M$ is the maximum number of neighbors a node in the
+		graph has), divding $\beta$ by two each iteration, until $\alpha > \beta$.
+	\item {\bf Preferential attachment (Global)}
+        We used the helper index that we created beforehand, to find pairs with 
+		maximal product.
+	\item {\bf Common Neighbors (for node)}
+        We used a simple query.
+	\item {\bf Jaccard's Coefficient (for node)}
+        We used a simple query, using the relation between the cardinality of 
+		union and intersection
+	\item {\bf Preferential attachment (for node)}
+        We used the helper index that we created beforehand, to find pairs with 
+		maximal product.
+	\item {\bf Graph Distance (for node)}
+		We iteratively ran a query, returning nodes until depth $i$ (increased on 
+		every iteration), until depth limit or returend data set limit has met.
+	\item {\bf Katz (for node)}
+		Without power function support in Cypher, we had to use multiple queries,
+		to calculate the Katz algorithm.
+	\item {\bf Rooted PageRank (for node)}
+        We used an iterative loop with the same logic like the other two databases,
+		storing the intermediate values as node properties.
 \end{itemize}
 
 \section{Experiments}
 We benchmarked the above implementations using 10 undirected graphs:
 \begin{itemize}
-\item Three graphs were extracted from the DBLP XML records using the authors as
-nodes, and co-authorship relation as edges. Each graph was over a different
-time period, and  we only kept authors with 3 or more publication within the
-selected time period (core-3). 
-
-\item Seven graphs from the Stanford Network Analysis Project (SNAP) dataset
-  collection. No changes were made to these graphs.
+	\item 
+		Three graphs were extracted from the DBLP XML records using the authors 
+		as nodes, and co-authorship relation as edges. Each graph was over a 
+		different time period, and  we only kept authors with 3 or more 
+		publication within the selected time period (core-3). 
+	\item 
+		Seven graphs from the Stanford Network Analysis Project (SNAP) dataset
+		collection:
+		\begin{enumerate}
+			\item {ego-Facebook} 
+				Anonymized Facebook data that was collected from survey 
+				participants using a Facebook app.
+			\item {email-Enron} 
+				Enron email communication network, released by the 
+				Federal Energy Regulatory Commission during its investigation.
+			\item {ca-AstroPh}
+				Scientific collaborations between authors papers submitted to 
+				Astro Physics category.
+			\item {ca-CondMat}
+				Scientific collaborations between authors papers submitted to 
+				Condense Matter category.
+			\item {ca-GrQc}
+				Scientific collaborations between authors papers submitted to 
+				General Relativity and Quantum Cosmology category.
+			\item {ca-HepPh}
+				Scientific collaborations between authors papers submitted to 
+				High Energy Physics - Phenomenology category.
+			\item {ca-HepTh}
+				Scientific collaborations between authors papers submitted to 
+				High Energy Physics - Theory category
+		\end{enumerate}
 \end{itemize}
+
+\begin{tabular}{ |l||c|r| }
+	\hline
+	Data-set & Node Count & Edge Count \\
+	\hline
+	dblp-2002-2009-core3 & 182493 & 1621846 \\
+	dblp-2010-2012-core3 & 248695 & 2589320 \\
+	dblp-all-core3       & 366600 & 4349796 \\
+	ego-Facebook         & 4039   & 170174  \\
+	email-Enron          & 36692  & 367662  \\
+	ca-AstroPh           & 18771  & 396160  \\
+	ca-CondMat           & 23133  & 186936  \\
+	ca-GrQc              & 5241   & 28980   \\
+	ca-HepPh             & 12006  & 237010  \\
+	ca-HepTh             & 9875   & 51971   \\
+	\hline  
+\end{tabular}
 
 Graphs to add:
 \begin{enumerate}
