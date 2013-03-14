@@ -14,6 +14,135 @@ from GDBB_Commons import *
 DEBUG = False
 MAX_BUFFER_SIZE = 1000000
 
+p_Common_Neighbors = """
+	local limit = tonumber(ARGV[1])
+	local tc = {};
+	local x = KEYS[1];
+	for k1,n in pairs(redis.call('smembers', x)) do 
+	  for k2,y in pairs(redis.call('smembers', n)) do
+		if x ~= y then
+		  tc[y] = (tc[y] or 0) + 1;
+		end;
+	  end;
+	end;
+	local ttop = {};
+	local min = math.huge;
+	local mini = '';
+	for k,v in pairs(tc) do
+	  if (#ttop < limit) then
+		table.insert(ttop, {k,v});
+		if v<min then min=v; mini=table.maxn(ttop); end;
+	  else
+		if v>min then
+		  ttop[mini] = {k,v};
+		  min = math.huge;
+		  for i = 1,#ttop,1 do
+			if ttop[i][2]<min then min=ttop[i][2]; mini=i;  end;
+		  end;
+		end;
+	  end;
+	end;
+	table.sort(ttop, function (a,b) return a[2]>b[2]; end);
+	local tret = {};
+	for i = 1,#ttop,1 do
+	  table.insert(tret, ttop[i][1]..','..ttop[i][2]);
+	end;
+	return tret;
+"""
+
+p_Jaccards_Coefficient = """
+	local limit = tonumber(ARGV[1])
+	local tc = {};
+	local x = KEYS[1];
+	for k1,n in pairs(redis.call('smembers', x)) do 
+	  for k2,y in pairs(redis.call('smembers', n)) do
+	    if x ~= y then
+		  tc[y] = (tc[y] or 0) + 1;
+		end;
+	  end;
+	end;
+	local xn = redis.call('scard',x);
+	local function jc(k,v)
+	  local yn = redis.call('scard',k);
+	  return (v/(xn+yn-v));
+	end;
+	local ttop = {};
+	local min = math.huge;
+	local mini = '';
+	local jcv = 0;
+	for k,v in pairs(tc) do
+	  if (#ttop < limit) then
+			jcv = jc(k,v);
+			table.insert(ttop, {k,jcv});
+			if jcv<min then min=jcv; mini=table.maxn(ttop); end;
+	  else
+			jcv = jc(k,v);
+			if jcv>min then
+			  ttop[mini] = {k,jcv};
+			  min = math.huge;
+			  for i = 1,#ttop,1 do
+					if ttop[i][2]<min then min=ttop[i][2]; mini=i;  end;
+			  end;
+			end;
+	  end;
+	end;
+	table.sort(ttop, function (a,b) return a[2]>b[2]; end);
+	local tret = {};
+	for i = 1,#ttop,1 do
+	  table.insert(tret, ttop[i][1]..','..ttop[i][2]);
+	end;
+	return tret;
+"""
+
+p_Adamic_Adar = """
+	local limit = tonumber(ARGV[1]);
+	local tc = {};
+	local x = KEYS[1];
+	for k1,n in pairs(redis.call('smembers', x)) do 
+	  for k2,y in pairs(redis.call('smembers', n)) do
+		if x ~= y then
+		  if not tc[y] then
+			tc[y] = {};
+		  end;
+	 	  table.insert(tc[y], n);
+	    end;
+	  end;
+	end;
+	local function aa(k,v)
+	  local sum = 0;
+	  for i,z in pairs(v) do
+		local zn = redis.call('scard',z);
+		sum = sum + 1/math.log10(zn);
+	  end;
+	  return sum;
+	end;
+	local ttop = {};
+	local min = math.huge;
+	local mini = '';
+	local aav = 0;
+	for k,v in pairs(tc) do
+	  aav = aa(k,v);
+	  if (#ttop < limit) then      
+		table.insert(ttop, {k,aav});
+		if aav<min then min=aav; mini=table.maxn(ttop); end;
+	  else
+		if aav>min then
+		  ttop[mini] = {k,aav};
+		  min = math.huge;
+		  for i = 1,#ttop,1 do
+			if ttop[i][2]<min then min=ttop[i][2]; mini=i;  end;
+		  end;
+		end;
+	  end;
+	end;
+	table.sort(ttop, function (a,b) return a[2]>b[2]; end);
+	local tret = {};
+	for i = 1,#ttop,1 do
+	  table.insert(tret, ttop[i][1]..','..ttop[i][2]);
+	end;
+	return tret;
+"""
+
 def dprint(msg):
 	if DEBUG:
 		print("DEBUG: " + str(msg))
@@ -288,6 +417,17 @@ def b_Preferential_Attachment (redis_interface, limit, output=False):
 		d[c] = dt[c[0]] * dt[c[1]]
 	if output: printDictByVal(d, limit)
 
+def getLuaFunction(ri, lua_function_string):
+    luaFunc = ri.register_script(lua_function_string)
+    def retFunction(redis_interface, x, limit, output=False):
+        ret = luaFunc(keys=[x], args=[limit])
+        if output:
+            for triplet in ret:
+                tf = triplet.split(',')
+                if len(tf)==2: 
+                    print('%s\t%s' % tuple(tf))
+    return retFunction
+
 def x_Common_Neighbors(redis_interface, x, limit, output=False):
 	'''
 		Common Neighbors for specific node
@@ -558,12 +698,11 @@ def main():
 	ret["bJaccardsCoefficient"] = b_Jaccards_Coefficient(rajl, 100)
 	ret["bAdamicAdar"] = b_Adamic_Adar(rajl, 100)
 	ret["bPreferentialAttachment"] = b_Preferential_Attachment(rcache, 100)
-	
-	ret["xCommonNeighbors"] = benchmarkFunctionLoop(x_Common_Neighbors, 
+	ret["xCommonNeighbors"] = benchmarkFunctionLoop(getLuaFunction(rajl, p_Common_Neighbors), 
 			1000, args.dataset, {'redis_interface': rajl, 'limit': 100})
-	ret["xJaccardsCoefficient"] = benchmarkFunctionLoop(x_Jaccards_Coefficient, 
+	ret["xJaccardsCoefficient"] = benchmarkFunctionLoop(getLuaFunction(rajl, p_Jaccards_Coefficient), 
 			1000, args.dataset, {'redis_interface': rajl, 'limit': 100})
-	ret["xAdamicAdar"] = benchmarkFunctionLoop(x_Adamic_Adar, 
+	ret["xAdamicAdar"] = benchmarkFunctionLoop(getLuaFunction(rajl, p_Adamic_Adar), 
 			1000, args.dataset, {'redis_interface': rajl, 'limit': 100})
 	ret["xPreferentialAttachment"] = benchmarkFunctionLoop(x_Preferential_Attachment, 
 			1000, args.dataset, {'redis_interface': rajl, 'limit': 100, 'cache_db': rcache})
