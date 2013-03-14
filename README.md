@@ -2,11 +2,11 @@ gdbb
 ====
 (Graph DB benchmarks)
 
-Benchmark graph link-prediction algorithms overs different DBMS
+Benchmark link-prediction algorithms overs different DBMS
 
-Algorithms can be found in [The Link Prediction Problem for Social Networks](http://www.cs.cornell.edu/home/kleinber/link-pred.pdf)
+Algorithm information can be found in [The Link Prediction Problem for Social Networks](http://www.cs.cornell.edu/home/kleinber/link-pred.pdf)
 
-Graphs are extracted from the [DBLP Computer Science Bibliography XML](http://dblp.uni-trier.de/xml/)
+Graphs are extracted from the [DBLP Computer Science Bibliography XML](http://dblp.uni-trier.de/xml/), and from [Stanford Large Network Dataset Collection](http://snap.stanford.edu/data)
 
 Results can be found [here](https://docs.google.com/spreadsheet/ccc?key=0AiFl0Xaks4G-dG9jZnJWWTF1cG5DZ0hjZk52d0JPMVE#gid=1)
 
